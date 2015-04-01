@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+__author__= 'Allison MacLeay'
+
+import sys
+import os
+import argparse
+
+
+#-----------------------------------------
+#	MAIN
+# run umitag.py for all files in a directory
+# that have the same prefix
+#-----------------------------------------
+if __name__ == '__main__':
+	parser=argparse.ArgumentParser(description="Run umitag utility in batches of similarly prefixed names.")
+	parser.add_argument('--dir', default='.', help='directory containing output of umi demultiplex')
+	parser.parse_args()
