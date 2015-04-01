@@ -22,7 +22,7 @@ def create_key(f1,f2,out):
     for idA in bc_dictA.keys():
         for idP in bc_dictP.keys():
             id=idA+'_'+idP
-            bc=bc_dictA[idA]+bc_dictP[idP]
+            bc=bc_dictA[idA][1:]+bc_dictP[idP][1:]
             bc_dict[id]=bc
             print >> fh, id + "\t" + bc
     fh.close()
@@ -48,7 +48,7 @@ def add_file_to_dict(fname,d):
 
 #-----------------------------------------
 #	MAIN
-# 
+# create a barcode file with barcodes 14 char wide 
 # 
 #-----------------------------------------
 if __name__ == '__main__':
@@ -56,5 +56,8 @@ if __name__ == '__main__':
 	parser.add_argument('--file1', required='true', help='first barcode file')
 	parser.add_argument('--file2', required='true', help='first barcode file')
 	parser.add_argument('--out', default='combined_key.txt', help='full path to output file')
+	parser.add_argument('--length', default='14', help='length of barcode to return.  default is 14')
 	args=parser.parse_args()
+	if(int(args.length) != 14):
+		sys.exit("Only barcodes 14 characters long are currently supported")
 	create_key(args.file1,args.file2,args.out)
