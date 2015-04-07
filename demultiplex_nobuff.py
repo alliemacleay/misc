@@ -66,6 +66,7 @@ def get_seq(i1, i2):
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
+# parse barcode file to tag with A and P ids
 sample_names = {}
 if not args['sample_barcodes']==None:
     for line in open(args['sample_barcodes'], 'r'):
@@ -91,6 +92,8 @@ for i1,i2 in itertools.izip(fq(args['index1']), fq(args['index2'])):
     if not count.has_key(sample_id):
         count[sample_id] = 0
     count[sample_id] += 1
+
+print ("Read count complete in %.1f minutes." % ( (time.time()-start)/60))
 
 for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args['index1']), fq(args['index2'])):
     # the original demultiplex stored sequences in a buffer to execute in 1N instead of 2N
@@ -137,4 +140,4 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
         outfiles_i2[sample_id].close()
 
 num_fastqs = len([v for k,v in count.iteritems() if v>=args['min_reads']])
-print('Wrote FASTQs for the %d sample barcodes out of %d with at least %d reads.' % (num_fastqs, len(count), args['min_reads']))
+print('Wrote FASTQs for the %d sample barcodes out of %d with at least %d reads in %.1f minutes.' % (num_fastqs, len(count), args['min_reads'], (time.time()-start)/60 ))
