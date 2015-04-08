@@ -105,10 +105,14 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
     if count[sample_id] < args['min_reads']:
 	# Write remaining buffered reads to a single fastq.
 	# (These reads correspond to barcodes that were seen less than min_reads times)
-        undetermined_r1 = open(os.path.join(out_dir, 'undetermined.r1.fastq'), 'a')
-        undetermined_r2 = open(os.path.join(out_dir, 'undetermined.r2.fastq'), 'a')
-        undetermined_i1 = open(os.path.join(out_dir, 'undetermined.i1.fastq'), 'a')
-        undetermined_i2 = open(os.path.join(out_dir, 'undetermined.i2.fastq'), 'a')
+	if 'undetermined_r1' not in vars():
+		undetermined_r1 = open(os.path.join(out_dir, 'undetermined.r1.fastq'), 'w')
+	if 'undetermined_r2' not in vars():
+		undetermined_r2 = open(os.path.join(out_dir, 'undetermined.r2.fastq'), 'w')
+	if 'undetermined_i1' not in vars():
+		undetermined_i1 = open(os.path.join(out_dir, 'undetermined.i1.fastq'), 'w')
+	if 'undetermined_i2' not in vars():
+		undetermined_i2 = open(os.path.join(out_dir, 'undetermined.i2.fastq'), 'w')
         for line in r1:
             print (line, file=undetermined_r1, end="")
         for line in r2:
@@ -117,15 +121,12 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
             print (line, file=undetermined_i1, end="")
         for line in i2:
             print (line, file=undetermined_i2, end="")
-        undetermined_r1.close()
-        undetermined_r2.close()
-        undetermined_i1.close()
-        undetermined_i2.close()
     else:
-        outfiles_r1[sample_id] = open(os.path.join(out_dir, '%s.r1.fastq' % sample_id), 'a')
-        outfiles_r2[sample_id] = open(os.path.join(out_dir, '%s.r2.fastq' % sample_id), 'a')
-        outfiles_i1[sample_id] = open(os.path.join(out_dir, '%s.i1.fastq' % sample_id), 'a')
-        outfiles_i2[sample_id] = open(os.path.join(out_dir, '%s.i2.fastq' % sample_id), 'a')
+	if sample_id not in outfiles_r1.keys():
+		outfiles_r1[sample_id] = open(os.path.join(out_dir, '%s.r1.fastq' % sample_id), 'w')
+		outfiles_r2[sample_id] = open(os.path.join(out_dir, '%s.r2.fastq' % sample_id), 'w')
+		outfiles_i1[sample_id] = open(os.path.join(out_dir, '%s.i1.fastq' % sample_id), 'w')
+		outfiles_i2[sample_id] = open(os.path.join(out_dir, '%s.i2.fastq' % sample_id), 'w')
         for line in r1:
             print (line, file=outfiles_r1[sample_id], end="")
         for line in r2:
@@ -134,10 +135,20 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
             print (line, file=outfiles_i1[sample_id], end="")
         for line in i2:
             print (line, file=outfiles_i2[sample_id], end="")
-        outfiles_r1[sample_id].close()
-        outfiles_r2[sample_id].close()
-        outfiles_i1[sample_id].close()
-        outfiles_i2[sample_id].close()
+
+undetermined_r1.close()
+undetermined_r2.close()
+undetermined_i1.close()
+undetermined_i2.close()
+
+for sample_id in outfiles_r1.keys():
+	outfiles_r1[sample_id].close()
+for sample_id in outfiles_r2.keys():
+	outfiles_r2[sample_id].close()
+for sample_id in outfiles_i1.keys():
+	outfiles_i1[sample_id].close()
+for sample_id in outfiles_i2.keys():
+	outfiles_i2[sample_id].close()
 
 num_fastqs = len([v for k,v in count.iteritems() if v>=args['min_reads']])
 print('Wrote FASTQs for the %d sample barcodes out of %d with at least %d reads in %.1f minutes.' % (num_fastqs, len(count), args['min_reads'], (time.time()-start)/60 ))
