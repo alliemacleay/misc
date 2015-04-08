@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #	There's no good way in cosmos to create a tag
 #	based on output or to conditionally run a process
@@ -36,8 +34,8 @@ def get_cmd(group, umitag, params):
 			outdir=outdir+'/'
 	fastq_r1=path + '/' + group +'.r1.fastq'
 	fastq_r2=path + '/' + group+'.r2.fastq'
-	out1= group+'.out1.fastq'
-	out2= group+'.out2.fastq'
+	out1= '' + group+'.out1.fastq'
+	out2= '' + group+'.out2.fastq'
 	fastq_i1=path + '/' + group +'.i1.fastq'
 	fastq_i2=path + '/' + group+'.i2.fastq'
 	cmd= (cmd+""" \
@@ -51,7 +49,7 @@ def get_cmd(group, umitag, params):
 		umitag  =	umitag,
 		fastq_r1= 	fastq_r1,
 		fastq_r2= 	fastq_r2,
-		outdir=		outdir,
+		outdir=		'/' + outdir,
 		out1=		out1,
 		out2=		out2,
 		fastq_i1=	fastq_i1,
@@ -79,6 +77,7 @@ if __name__ == '__main__':
 	parser.add_argument('--dir', default='.', help='directory containing output of umi demultiplex')
 	parser.add_argument('--umi_tool',default='umitag.py', help='umi tag tool absolute path. default is umitag.py in current directory')
 	parser.add_argument('--out', default='tagout', help='directory to deposit output files')
+	parser.add_argument('--log', default='batch_log', help='directory to deposit bsub log files')
 	parser.add_argument('--bsub_off',  action='store_true', help='turn bsub off to test on systems without lsf')
 	args=parser.parse_args()
 
@@ -88,6 +87,8 @@ if __name__ == '__main__':
 	if hasattr(args, 'out'):
 		p['out']=args.out
 		os.system('mkdir -p '+args.out)
+	if hasattr(args, 'log'):
+		os.system('mkdir -p '+args.log)
 	f=get_names(args.dir)
 	if len(f)<1:
 		print "Error: No file prefixes were found in "+args.dir+"."
@@ -95,7 +96,7 @@ if __name__ == '__main__':
 		if(args.bsub_off):
 			cmd=get_cmd(tag, args.umi_tool, p)
 		else:
-			cmd='bsub ' + get_cmd(tag, args.umi_tool, p)
+			cmd='bsub -q medium -u am282 -o ' + os.path.join(args.log,'lsf_out.log') + ' -e ' + os.path.join(args.log,'lsf_err.log') + ' ' + get_cmd(tag, args.umi_tool, p)
 		#print cmd
 		os.system(cmd)
 		
