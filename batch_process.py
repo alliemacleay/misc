@@ -15,6 +15,7 @@ __author__= 'Allison MacLeay'
 import sys
 import os
 import argparse
+import time
 
 #-----------------------------------------
 # Get umitag.py bash command for specified
@@ -30,6 +31,8 @@ def get_cmd(group, umitag, params):
 		outdir=params['out']
 		if(outdir[0]=='/'):
 			outdir=outdir[1:]
+		else:
+			outdir=os.path.abspath(outdir)[1:]
 		if(outdir[-1] != '/'):
 			outdir=outdir+'/'
 	fastq_r1=path + '/' + group +'.r1.fastq'
@@ -68,6 +71,33 @@ def get_names(dir):
 	return dfiles
 
 #-----------------------------------------
+# Delay completion of script until all
+#  files are written
+#-----------------------------------------
+def check_done(file_num,path):
+	start=time.time()
+	timeout=(10*60) # 10 minutes
+	done=0
+	while done==0:
+		files=next(os.walk(path))[2]
+		all_closed=0
+		if len(files)==file_num:
+			all_closed=1
+			for f in files:
+				if f.find('tmp')>0:
+					all_closed=0
+					print 'found tmp file ' + f + '.  Waiting...'
+					continue
+		if all_closed==1:
+			done=1
+		elif (time.time()-start)>timeout:
+			print 'Job timed out'
+		else:
+			time.sleep(5)
+			print 'checking for job completion after waiting %d seconds' % (time.time()-start)
+			print 'searching for ' + str(file_num) + ', found ' + str(len(files)) + ' files in ' + path
+
+#-----------------------------------------
 #	MAIN
 # run umitag.py for all files in a directory
 # that have the same prefix
@@ -79,6 +109,7 @@ if __name__ == '__main__':
 	parser.add_argument('--out', default='tagout', help='directory to deposit output files')
 	parser.add_argument('--log', default='batch_log', help='directory to deposit bsub log files')
 	parser.add_argument('--bsub_off',  action='store_true', help='turn bsub off to test on systems without lsf')
+	#parser.add_argument('--undet',  action='store_false', help='include reads less than parameter set my min reads.  Default will skip files named undetermined')
 	args=parser.parse_args()
 
 	p={}
@@ -89,14 +120,43 @@ if __name__ == '__main__':
 		os.system('mkdir -p '+args.out)
 	if hasattr(args, 'log'):
 		os.system('mkdir -p '+args.log)
+		os.system('ls ' + p['path'] + ' >> ' + args.log + '/ls_inputdir.txt')
 	f=get_names(args.dir)
 	if len(f)<1:
 		print "Error: No file prefixes were found in "+args.dir+"."
+	count_lsf=0
 	for tag in f:
-		if(args.bsub_off):
+		if (tag == 'undetermined'):
+			# skip undeterminded for now
+			cmd='echo skipping undetermined files'
+		elif(args.bsub_off):
 			cmd=get_cmd(tag, args.umi_tool, p)
 		else:
+			# Prevent cosmos from deleting files before spawned job completes
+			p['tmpdir']=args.out + '/tmp' + tag
+			cmd="""mkdir -p {tmpdir} && \
+				cp {path}{tag}.* {tmpdir}/ 
+				""".format(
+					tmpdir	=	p['tmpdir'],
+					path	=	p['path'],
+					tag	=	tag,
+				)
+			print cmd
+			os.system(cmd)
+			tmppath=p['path']
+			p['path']=p['tmpdir']
 			cmd='bsub -q medium -u am282 -o ' + os.path.join(args.log,'lsf_out.log') + ' -e ' + os.path.join(args.log,'lsf_err.log') + ' ' + get_cmd(tag, args.umi_tool, p)
-		#print cmd
-		os.system(cmd)
+			# Keep track of lsf job for listener
+			count_lsf=count_lsf+2
 		
+		print 'batch process running command:\n' + cmd
+		os.system(cmd)
+		p['path']=tmppath
+		
+	if (count_lsf>0):
+		check_done(count_lsf,args.out)
+		cmd = 'rm -r ' + args.out + '/tmp*'
+		print cmd
+		os.system(cmd)
+	print 'batch_process done'
+			
