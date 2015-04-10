@@ -25,6 +25,8 @@ parser.add_argument('--index1', required=True)
 parser.add_argument('--index2', required=True)
 parser.add_argument('--min_reads', type=int, default=10000)
 parser.add_argument('--sample_barcodes')
+parser.add_argument('--p5_barcodes')
+parser.add_argument('--p7_barcodes')
 parser.add_argument('--out_dir', default='.')
 args = vars(parser.parse_args())
 out_dir = args['out_dir']
@@ -35,6 +37,28 @@ out_dir = args['out_dir']
 #args['read2'] = os.path.join(base, 'Undetermined_S0_L001_R2_001.fastq.gz')
 #args['index1'] = os.path.join(base, 'Undetermined_S0_L001_I1_001.fastq.gz')
 #args['index2'] = os.path.join(base, 'Undetermined_S0_L001_I2_001.fastq.gz')
+
+swap={}
+do_swap=1
+fargs=['read1','read2','index1','index2']
+for f in fargs:
+    name=args[f]
+    if name.find('_R1_')>0:
+        swap['read1']=name
+    elif name.find('_R2_')>0:
+        swap['read2']=name
+    elif name.find('_I1_')>0:
+        swap['index1']=name
+    elif name.find('_I2_')>0:
+        swap['index2']=name
+    else:
+        do_swap=0 # one or more files do not adhere to schema.  Can not confidently swap
+
+if (do_swap==1) & (len(swap)==4):
+    # swapping files for names that are passed in in the wrong order
+    # but follow the schema of containing _R1_
+    for f in fargs:
+        args[f]=swap[f]
 
 def fq(file):
     if re.search('.gz$', file):
@@ -51,6 +75,44 @@ def fq(file):
             l4 = f.readline()
             yield [l1, l2, l3, l4]
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create a combined barcode key file from 2 files
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def create_key(f1,f2):
+    bc_dict={}
+    bc_dictA={}
+    bc_dictP={}
+    add_file_to_dict(f1,bc_dictA)
+    add_file_to_dict(f2,bc_dictP)
+
+    for idA in bc_dictA.keys():
+        for idP in bc_dictP.keys():
+            id=idA+'_'+idP
+            bc=bc_dictA[idA][1:]+bc_dictP[idP][1:]
+            bc_dict[id]=bc
+    return bc_dict
+
+def add_file_to_dict(fname,d):
+    """
+    helper function - add a file to the dictionary
+    :param fname: an array of strings with filenames to parse
+    :param d: a dictionary (dict)
+    :return:
+    """
+    HEADER=1 # skip first line if equal to 1
+    fh=open(fname,'r')
+    for line in fh:
+        if HEADER == 1:
+            HEADER=HEADER-1
+            continue
+        [id,seq]=line.strip().split('\t')
+        d[id]=seq
+    fh.close()
+    return
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# helper functions
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def get_sample_id(i1, i2):
     sample_barcode = get_seq(i1, i2)
     if sample_names.has_key(sample_barcode):
@@ -63,6 +125,9 @@ def get_seq(i1, i2):
     seq2=i2[1]
     return seq1[1:8] + seq2[1:8]
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#          MAIN
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -74,6 +139,9 @@ if not args['sample_barcodes']==None:
         if len(fields)==2:
             sampleid, barcode = fields
             sample_names[barcode] = sampleid
+
+if ('p5_barcodes' in args.keys()) & ('p7_barcodes' in args.keys()):
+    sample_names = create_key(args['p5_barcodes'], args['p7_barcodes'])
 
 outfiles_r1 = {}
 outfiles_r2 = {}

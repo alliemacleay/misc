@@ -132,31 +132,14 @@ if __name__ == '__main__':
 		elif(args.bsub_off):
 			cmd=get_cmd(tag, args.umi_tool, p)
 		else:
-			# Prevent cosmos from deleting files before spawned job completes
-			p['tmpdir']=args.out + '/tmp' + tag
-			cmd="""mkdir -p {tmpdir} && \
-				cp {path}{tag}.* {tmpdir}/ 
-				""".format(
-					tmpdir	=	p['tmpdir'],
-					path	=	p['path'],
-					tag	=	tag,
-				)
-			print cmd
-			os.system(cmd)
-			tmppath=p['path']
-			p['path']=p['tmpdir']
 			cmd='bsub -q medium -u am282 -o ' + os.path.join(args.log,'lsf_out.log') + ' -e ' + os.path.join(args.log,'lsf_err.log') + ' ' + get_cmd(tag, args.umi_tool, p)
 			# Keep track of lsf job for listener
 			count_lsf=count_lsf+2
 		
 		print 'batch process running command:\n' + cmd
 		os.system(cmd)
-		p['path']=tmppath
 		
 	if (count_lsf>0):
 		check_done(count_lsf,args.out)
-		cmd = 'rm -r ' + args.out + '/tmp*'
-		print cmd
-		os.system(cmd)
 	print 'batch_process done'
 			
