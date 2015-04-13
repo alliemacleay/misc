@@ -80,17 +80,13 @@ def fq(file):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def create_key(f1,f2):
     bc_dict={}
+    bcAP=()
     bc_dictA={}
     bc_dictP={}
     add_file_to_dict(f1,bc_dictA)
     add_file_to_dict(f2,bc_dictP)
-
-    for idA in bc_dictA.keys():
-        for idP in bc_dictP.keys():
-            id=idA+'_'+idP
-            bc=bc_dictA[idA][1:]+bc_dictP[idP][1:]
-            bc_dict[id]=bc
-    return bc_dict
+    bcAP=[bc_dictA,bc_dictP]
+    return bcAP
 
 def add_file_to_dict(fname,d):
     """
@@ -113,13 +109,20 @@ def add_file_to_dict(fname,d):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # helper functions
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def get_sample_id(i1, i2):
-    sample_barcode = get_seq(i1, i2)
-    if sample_names.has_key(sample_barcode):
-        return sample_names[sample_barcode]
-    else:
-        return sample_barcode
-
+def get_sample_name(index1,index2,id_array):
+    dictA=id_array[0]
+    dictB=id_array[1]
+    sample_name=''
+    if index1 in dictA.keys():
+            Aname=dictA[index1]
+        else:
+            Aname=index1
+    if index2 in dictP.keys():
+            Pname=dictP[index2]
+        else:
+            Pname=index2
+    return Aname + '_' + Pname
+    
 def get_seq(i1, i2):
     seq1=i1[1]
     seq2=i2[1]
@@ -141,7 +144,7 @@ if not args['sample_barcodes']==None:
             sample_names[barcode] = sampleid
 
 if ('p5_barcodes' in args.keys()) & ('p7_barcodes' in args.keys()):
-    sample_names = create_key(args['p5_barcodes'], args['p7_barcodes'])
+    bar_dict= create_key(args['p5_barcodes'], args['p7_barcodes'])
 
 outfiles_r1 = {}
 outfiles_r2 = {}
@@ -154,7 +157,7 @@ count = {}
 # Create count dictionary first
 start = time.time()
 for i1,i2 in itertools.izip(fq(args['index1']), fq(args['index2'])):
-    sample_id = get_sample_id(i1, i2)
+    sample_id = get_sample_id(i1, i2, bar_dict)
 
     # Increment read count and create output buffers if this is a new sample barcode
     if not count.has_key(sample_id):
