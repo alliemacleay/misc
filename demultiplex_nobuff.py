@@ -24,7 +24,6 @@ parser.add_argument('--read2', required=True)
 parser.add_argument('--index1', required=True)
 parser.add_argument('--index2', required=True)
 parser.add_argument('--min_reads', type=int, default=10000)
-parser.add_argument('--sample_barcodes')
 parser.add_argument('--p5_barcodes')
 parser.add_argument('--p7_barcodes')
 parser.add_argument('--out_dir', default='.')
@@ -102,26 +101,29 @@ def add_file_to_dict(fname,d):
             HEADER=HEADER-1
             continue
         [id,seq]=line.strip().split('\t')
-        d[id]=seq
+        d[seq[1:8]]=id
     fh.close()
     return
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # helper functions
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def get_sample_name(index1,index2,id_array):
+def get_sample_name(i1,i2,id_array):
+    index1=i1[1][1:8]
+    index2=i2[1][1:8]
     dictA=id_array[0]
-    dictB=id_array[1]
-    sample_name=''
-    if index1 in dictA.keys():
-            Aname=dictA[index1]
-        else:
-            Aname=index1
-    if index2 in dictP.keys():
-            Pname=dictP[index2]
-        else:
-            Pname=index2
-    return Aname + '_' + Pname
+    dictP=id_array[1]
+    Aname=''
+    Pname=''
+    if index1 in dictP.keys():
+        Pname=dictP[index1]
+    else:
+        Pname=index1
+    if index2 in dictA.keys():
+        Aname=dictA[index2]
+    else:
+        Aname=index2
+    return (Aname + '_' + Pname)
     
 def get_seq(i1, i2):
     seq1=i1[1]
@@ -133,15 +135,6 @@ def get_seq(i1, i2):
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
-
-# parse barcode file to tag with A and P ids
-sample_names = {}
-if not args['sample_barcodes']==None:
-    for line in open(args['sample_barcodes'], 'r'):
-        fields = line.strip().split('\t')
-        if len(fields)==2:
-            sampleid, barcode = fields
-            sample_names[barcode] = sampleid
 
 if ('p5_barcodes' in args.keys()) & ('p7_barcodes' in args.keys()):
     bar_dict= create_key(args['p5_barcodes'], args['p7_barcodes'])
@@ -157,23 +150,27 @@ count = {}
 # Create count dictionary first
 start = time.time()
 for i1,i2 in itertools.izip(fq(args['index1']), fq(args['index2'])):
-    sample_id = get_sample_id(i1, i2, bar_dict)
+    sample_id = get_seq(i1, i2)
 
     # Increment read count and create output buffers if this is a new sample barcode
     if not count.has_key(sample_id):
         count[sample_id] = 0
     count[sample_id] += 1
+    total_count += 1
+    if total_count % 5000000 == 0:
+        print ("Processed %d counts in %.1f minutes." % (total_count, (time.time()-start)/60))
 
 print ("Read count complete in %.1f minutes." % ( (time.time()-start)/60))
 
+total_count=0
 for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args['index1']), fq(args['index2'])):
     # the original demultiplex stored sequences in a buffer to execute in 1N instead of 2N
     # this version minimizes the memory requirement by running in 2N
     total_count += 1
     if total_count % 1000000 == 0:
         print ("Processed %d reads in %.1f minutes." % (total_count, (time.time()-start)/60))
-    sample_id=get_sample_id(i1,i2)
-    if count[sample_id] < args['min_reads']:
+    sample_id=get_sample_name(i1,i2,bar_dict)
+    if count[get_seq(i1, i2)] < args['min_reads']:
 	# Write remaining buffered reads to a single fastq.
 	# (These reads correspond to barcodes that were seen less than min_reads times)
 	if 'undetermined_r1' not in vars():
