@@ -66,7 +66,7 @@ def get_grouped_manifest_files(directory, drmaa_cmd):
 		if prefix not in inputs.keys():
 			inputs[prefix]={}
 			inputs[prefix]['files']=[]
-			inputs[prefix]['unmapped']=rcols_rev_dict
+			inputs[prefix]['unmapped']=rcols_rev_dict.copy()
 			inputs[prefix]['unmapped_files']=[]
 		# add file information for this prefix
 		fullname=os.path.join(directory,i)
@@ -88,7 +88,7 @@ def get_grouped_manifest_files(directory, drmaa_cmd):
 		cmd = 'echo zipping_files_in_'+ directory + ' && gzip ' + directory + '/*.fastq'
 		if(drmaa_cmd != ''):
 			cmd = drmaa_cmd + ' ' + cmd
-		os.system(cmd)
+			os.system(cmd)
 	return inputs
 
 #-----------------------------------------
@@ -123,7 +123,8 @@ if __name__ == '__main__':
 		batch_id=args.batch_id
 	fdict=get_grouped_manifest_files(p['path'],args.drmaa_cmd)
 	#print fdict
-	
+	#exit()
+
 	not_found={}
 	f = open(batch_manifest, 'r')
 	manfname=os.path.join(p['out'],batch_manifest.split('/')[-1].split('.')[0] + '_DEMULTIPLEXED' + '.manifest')
@@ -139,7 +140,6 @@ if __name__ == '__main__':
 			if ia>-1:
 				cid_id=cid_id[ia+9:]
 			prefix=p5 + '_' + p7
-			
 			if prefix in fdict.keys():
 				if len(line)<8:
 					for ln in range(len(line)-1,8):
@@ -153,19 +153,13 @@ if __name__ == '__main__':
 				if len(fdict[prefix]['unmapped_files'])>0:
 					print 'Warning: Some files did not adhere to naming conventions and were not assigned written to manifest'
 					print '\tFiles: '+'\n'.join(fdict[prefix]['unmapped_files'])
-				if not header == '':
-					text = header + "\n"
-				elif not batch_header == '':
-					text = batch_header
-				else:
-					text = "# HEADER\n"
 				text += "\t".join(line) + "\n"
 				manfile.write(text)
-				del queue[prefix]
+				del fdict[prefix]
 			else:
 				not_found[prefix]=line
 		else:
-			batch_header=line
+			manfile.write(line)	
 	manfile.close()
 	f.close()
 	print 'manifests generator done'
