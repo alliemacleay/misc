@@ -101,7 +101,7 @@ if __name__ == '__main__':
 	parser.add_argument('--dir', default='.', help='directory containing fastq output.')
 	parser.add_argument('--batch_manifest', help='manifest file for multiplexed run.')
 	parser.add_argument('--batch_id', default='demux', help='id for the multiplexed fastq.  This will be the first part of the name of the outputted manifest files')
-	parser.add_argument('--header', required=True, help='Header for manifest file')
+	parser.add_argument('--header', required=False, help='Header for manifest file')
 	parser.add_argument('--out', default='manfiles', help='directory to deposit output files')
 	parser.add_argument('--drmaa_cmd', default='', help='drmaa to execute zipping files if needed')
 	args=parser.parse_args()
