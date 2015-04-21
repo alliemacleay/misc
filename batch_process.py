@@ -126,7 +126,7 @@ if __name__ == '__main__':
 		print "Error: No file prefixes were found in "+args.dir+"."
 	count_lsf=0
 	for tag in f:
-		if (tag == 'undetermined'):
+		if (tag.find('undetermined') > -1 ):
 			# skip undeterminded for now
 			cmd='echo skipping undetermined files'
 		elif(args.bsub_off):

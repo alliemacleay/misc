@@ -27,6 +27,7 @@ parser.add_argument('--min_reads', type=int, default=10000)
 parser.add_argument('--p5_barcodes')
 parser.add_argument('--p7_barcodes')
 parser.add_argument('--out_dir', default='.')
+parser.add_argument('--out_fname', default='')
 args = vars(parser.parse_args())
 out_dir = args['out_dir']
 
@@ -139,6 +140,10 @@ if not os.path.exists(out_dir):
 if ('p5_barcodes' in args.keys()) & ('p7_barcodes' in args.keys()):
     bar_dict= create_key(args['p5_barcodes'], args['p7_barcodes'])
 
+fname=''
+if (args.fname != ''):
+    fname=args.fname+'_'
+
 outfiles_r1 = {}
 outfiles_r2 = {}
 outfiles_i1 = {}
@@ -174,13 +179,13 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
 	# Write remaining buffered reads to a single fastq.
 	# (These reads correspond to barcodes that were seen less than min_reads times)
 	if 'undetermined_r1' not in vars():
-		undetermined_r1 = open(os.path.join(out_dir, 'undetermined.r1.fastq'), 'w')
+		undetermined_r1 = open(os.path.join(out_dir, fname + 'undetermined.r1.fastq'), 'w')
 	if 'undetermined_r2' not in vars():
-		undetermined_r2 = open(os.path.join(out_dir, 'undetermined.r2.fastq'), 'w')
+		undetermined_r2 = open(os.path.join(out_dir, fname + 'undetermined.r2.fastq'), 'w')
 	if 'undetermined_i1' not in vars():
-		undetermined_i1 = open(os.path.join(out_dir, 'undetermined.i1.fastq'), 'w')
+		undetermined_i1 = open(os.path.join(out_dir, fname + 'undetermined.i1.fastq'), 'w')
 	if 'undetermined_i2' not in vars():
-		undetermined_i2 = open(os.path.join(out_dir, 'undetermined.i2.fastq'), 'w')
+		undetermined_i2 = open(os.path.join(out_dir, fname + 'undetermined.i2.fastq'), 'w')
         for line in r1:
             print (line, file=undetermined_r1, end="")
         for line in r2:
@@ -191,10 +196,11 @@ for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args[
             print (line, file=undetermined_i2, end="")
     else:
 	if sample_id not in outfiles_r1.keys():
-		outfiles_r1[sample_id] = open(os.path.join(out_dir, '%s.r1.fastq' % sample_id), 'w')
-		outfiles_r2[sample_id] = open(os.path.join(out_dir, '%s.r2.fastq' % sample_id), 'w')
-		outfiles_i1[sample_id] = open(os.path.join(out_dir, '%s.i1.fastq' % sample_id), 'w')
-		outfiles_i2[sample_id] = open(os.path.join(out_dir, '%s.i2.fastq' % sample_id), 'w')
+                outname = fname + sample_id
+		outfiles_r1[sample_id] = open(os.path.join(out_dir, '%s.r1.fastq' % outname), 'w')
+		outfiles_r2[sample_id] = open(os.path.join(out_dir, '%s.r2.fastq' % outname), 'w')
+		outfiles_i1[sample_id] = open(os.path.join(out_dir, '%s.i1.fastq' % outname), 'w')
+		outfiles_i2[sample_id] = open(os.path.join(out_dir, '%s.i2.fastq' % outname), 'w')
         for line in r1:
             print (line, file=outfiles_r1[sample_id], end="")
         for line in r2:
