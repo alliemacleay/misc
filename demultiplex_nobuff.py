@@ -144,7 +144,7 @@ if ('p5_barcodes' in args.keys()) & ('p7_barcodes' in args.keys()):
     bar_dict= create_key(args['p5_barcodes'], args['p7_barcodes'])
 
 fname=''
-if (args.out_fname != ''):
+if ('out_fname' in args.keys()) & (args.out_fname != ''):
     fname=args.out_fname+'_'
 
 outfiles_r1 = {}
