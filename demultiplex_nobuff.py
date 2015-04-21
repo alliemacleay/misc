@@ -101,7 +101,10 @@ def add_file_to_dict(fname,d):
         if HEADER == 1:
             HEADER=HEADER-1
             continue
-        [id,seq]=line.strip().split('\t')
+        line=line.strip().split('\t')
+        if len(line)<2:
+            continue
+        [id,seq]=line
         d[seq[1:8]]=id
     fh.close()
     return
