@@ -164,7 +164,7 @@ if __name__ == '__main__':
 			manfile.write(line)	
 	manfile.close()
 	f.close()
-	if len(not_found > 0):
+	if len(not_found) > 0:
 		print 'Warning: the following keys were in the batch manifest and did not correspond with any fastq output files:'
 		for i in not_found.keys():
 			print i + ' '.join(not_found[i])
