@@ -76,7 +76,7 @@ def get_names(dir):
 #-----------------------------------------
 def check_done(file_num,path):
 	start=time.time()
-	timeout=(10*60) # 10 minutes
+	timeout=(24*60*60) # 24 hours
 	done=0
 	while done==0:
 		files=next(os.walk(path))[2]
@@ -91,6 +91,7 @@ def check_done(file_num,path):
 		if all_closed==1:
 			done=1
 		elif (time.time()-start)>timeout:
+			done=1
 			print 'Job timed out'
 		else:
 			time.sleep(5)
