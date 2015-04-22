@@ -88,7 +88,9 @@ def get_grouped_manifest_files(directory, drmaa_cmd):
 		cmd = 'echo zipping_files_in_'+ directory + ' && gzip ' + directory + '/*.fastq'
 		if(drmaa_cmd != ''):
 			cmd = drmaa_cmd + ' ' + cmd
-			os.system(cmd)
+		os.system(cmd)
+	else:
+		print 'Files already zipped'
 	return inputs
 
 #-----------------------------------------
@@ -162,4 +164,9 @@ if __name__ == '__main__':
 			manfile.write(line)	
 	manfile.close()
 	f.close()
+	if len(not_found > 0):
+		print 'Warning: the following keys were in the batch manifest and did not correspond with any fastq output files:'
+		for i in not_found.keys():
+			print i + ' '.join(not_found[i])
+	print 'wrote to ' + manfname
 	print 'manifests generator done'
