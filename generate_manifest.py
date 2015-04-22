@@ -32,11 +32,13 @@ def get_bc_prefix(filename):
 #      dict['A104_P109']['A104_P109.r1.fastq.gz'] = 'full/path/name/A104_P109.r1.fastq.gz'
 #      dict['A104_P109']['r1']		= 'A104_P109.r1.fastq.gz'
 #	...etc.
-def get_grouped_manifest_files(directory, drmaa_cmd):
+def get_grouped_manifest_files(directory, drmaa_cfg):
 	# default drmaa_cmd is empty string
 	# preferably bsub -u <user_name> -o <out_log> -e <err_log> -q <medium>
-	if not 'drmaa_cmd' in vars():
-		drmaa_cmd = ''
+	drmaa_cmd=''
+	if 'drmaa_cfg' in vars():
+		if drmaa_cfg=='lsf':
+			drmaa_cmd = 'bsub -u am282 -o o_zip.log -e e_zip.log -q medium'
 	files=next(os.walk(directory))[2]
 	inputs={}
 	if len(files)<1:
@@ -79,19 +81,23 @@ def get_grouped_manifest_files(directory, drmaa_cmd):
 		for section in fastq_name:
 			if section in rcols:
 				if rcols[section] in inputs[prefix]['unmapped'].keys():
-					inputs[prefix][rcols[section]]=i
+					inputs[prefix][rcols[section]]=fullname
 					del inputs[prefix]['unmapped'][rcols[section]]
 					break
 		else:
 			inputs[prefix]['unmapped_files'].append(i)
 	if(needs_zipping == True):
-		cmd = 'echo zipping_files_in_'+ directory + ' && gzip ' + directory + '/*.fastq'
-		if(drmaa_cmd != ''):
-			cmd = drmaa_cmd + ' ' + cmd
-		os.system(cmd)
+		zip_fastq_files(directory,drmaa_cmd)
 	else:
 		print 'Files already zipped'
 	return inputs
+
+def zip_fastq_files(folder,drmaa_cmd):
+	cmd = 'echo zipping_files_in_'+ folder + ' && gzip ' + folder + '/*.fastq'
+	if(drmaa_cmd != ''):
+		cmd = drmaa_cmd + ' ' + cmd
+	os.system(cmd)
+	return
 
 #-----------------------------------------
 #	MAIN
@@ -105,7 +111,7 @@ if __name__ == '__main__':
 	parser.add_argument('--batch_id', default='demux', help='id for the multiplexed fastq.  This will be the first part of the name of the outputted manifest files')
 	parser.add_argument('--header', required=False, help='Header for manifest file')
 	parser.add_argument('--out', default='manfiles', help='directory to deposit output files')
-	parser.add_argument('--drmaa_cmd', default='', help='drmaa to execute zipping files if needed')
+	parser.add_argument('--drmaa_config', default='', help='drmaa configuration to execute zipping files if needed')
 	args=parser.parse_args()
 
 	p={}
@@ -123,7 +129,7 @@ if __name__ == '__main__':
 		header=args.header
 	if hasattr(args, 'batch_id'):
 		batch_id=args.batch_id
-	fdict=get_grouped_manifest_files(p['path'],args.drmaa_cmd)
+	fdict=get_grouped_manifest_files(p['path'],args.drmaa_config)
 	#print fdict
 	#exit()
 
