@@ -233,7 +233,7 @@ if __name__ == '__main__':
 		for i in not_found.keys():
 			print i + ' '.join(not_found[i])
 	print 'wrote to ' + manfname
-	if zip_info['job_id'] != '':
+	if 'job_id' in zip_info.keys():
 		check_done(zip_info)
 	cp_cmd='mv '+mantmp+ ' ' + manfname
 	os.system(cp_cmd) 
