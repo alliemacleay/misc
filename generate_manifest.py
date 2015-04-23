@@ -133,8 +133,8 @@ def check_done(p):
 			pass
 		else:
 			done=True
-		else:
-			run_dur=round(time.time()-start),0)
+		if not done:
+			run_dur=round((time.time()-start),0)
 			if (run_dur % 30) < 6:
 				print 'waiting for job ' + job_id + ' status to be DONE. Status is ' + status + ' at ' + str(time.time()-start) + ' seconds'
 			time.sleep(5)
