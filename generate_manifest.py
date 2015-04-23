@@ -8,6 +8,7 @@ __author__= 'Allison MacLeay'
 import sys
 import os
 import argparse
+import time
 
 #-----------------------------------------
 # Subroutines
@@ -25,18 +26,22 @@ def get_bc_prefix(filename):
 # prefix name.
 # - Zip files if needed
 #
-# ex.  dict['A104_P109']['files']	= [ 	'A104_P109.r1.fastq.gz','A104_P109.r2.fastq.gz',
+# ex.  dict['input']['A104_P109']['files']	= [ 	'A104_P109.r1.fastq.gz','A104_P109.r2.fastq.gz',
 #						'A104_P109.i1.fastq.gz','A104_P109.i2.fastq.gz']
-#      dict['A104_P109']['unmapped']	= {} // ideally this would be empty otherwise a dictionary
+#      dict['input]['A104_P109']['unmapped']	= {} // ideally this would be empty otherwise a dictionary
 #						of unmapped columns
-#      dict['A104_P109']['A104_P109.r1.fastq.gz'] = 'full/path/name/A104_P109.r1.fastq.gz'
-#      dict['A104_P109']['r1']		= 'A104_P109.r1.fastq.gz'
+#      dict['input']['A104_P109']['A104_P109.r1.fastq.gz'] = 'full/path/name/A104_P109.r1.fastq.gz'
+#      dict['input']['A104_P109']['r1']		= 'A104_P109.r1.fastq.gz'
 #	...etc.
 def get_grouped_manifest_files(directory, drmaa_cfg):
 	# default drmaa_cmd is empty string
 	# preferably bsub -u <user_name> -o <out_log> -e <err_log> -q <medium>
 	drmaa_cmd=''
+	ret_dict={}
+	ret_dict['zip_info']={}
+	ret_dict['zip_info']['job_type']=''
 	if 'drmaa_cfg' in vars():
+		ret_dict['zip_info']['job_type']=drmaa_cfg
 		if drmaa_cfg=='lsf':
 			drmaa_cmd = 'bsub -u am282 -o o_zip.log -e e_zip.log -q medium'
 	files=next(os.walk(directory))[2]
@@ -87,17 +92,66 @@ def get_grouped_manifest_files(directory, drmaa_cfg):
 		else:
 			inputs[prefix]['unmapped_files'].append(i)
 	if(needs_zipping == True):
-		zip_fastq_files(directory,drmaa_cmd)
+		ret_dict['zip_info']['job_id'] = zip_fastq_files(directory,drmaa_cmd)
 	else:
 		print 'Files already zipped'
-	return inputs
+	ret_dict['inputs']=inputs
+	return ret_dict
 
 def zip_fastq_files(folder,drmaa_cmd):
-	cmd = 'echo zipping_files_in_'+ folder + ' && gzip ' + folder + '/*.fastq'
+	job_id=''
+	cmd = 'echo zipping_files_in_'+ folder + ' && gzip ' + os.path.join(folder , '*.fastq')
 	if(drmaa_cmd != ''):
-		cmd = drmaa_cmd + ' ' + cmd
-	os.system(cmd)
+		cmd = drmaa_cmd + ' "' + cmd + '"'
+	out = os.popen(cmd).read()
+	if(out.find('<') > -1 ) & (out.find('>') > -1 ):
+		# bsub output found
+		job_id=out.split('<')[1].split('>')[0]
+	return job_id
+
+def check_done(p):
+	start=time.time()
+	timeout=(30*60)	# 30 minutes
+	done=False
+	if 'job_type' in p.keys():
+		if p['job_type'] != 'lsf':
+			print 'No support for tracking jobs that are not lsf'
+			done=True
+	if 'job_id' not in p.keys():
+		print 'Error: Missing job id'
+		done=True
+	else:
+		job_id=p['job_id']
+	while (done == False):
+		if (time.time()-start) > timeout:
+			print 'Job timed out after 30 minutes.'
+			done=True
+		status = get_job_status(job_id)
+		if status == 'PEND':
+			pass
+		elif status == 'RUN':
+			pass
+		else:
+			done=True
+		else:
+			run_dur=round(time.time()-start),0)
+			if (run_dur % 30) < 6:
+				print 'waiting for job ' + job_id + ' status to be DONE. Status is ' + status + ' at ' + str(time.time()-start) + ' seconds'
+			time.sleep(5)
 	return
+
+def get_job_status(job_id):
+	status=''
+	field_num=3
+	ret=os.popen('bjobs ' + job_id).read()
+	ret=ret.split('\n')[1]
+	for n in range(field_num-1):
+		sn=ret.find(' ')
+		ret=ret[sn:]
+		while(ret.find(' ') == 0):
+			ret=ret[1:]
+	status=ret[:ret.find(' ')]
+	return status
 
 #-----------------------------------------
 #	MAIN
@@ -129,15 +183,19 @@ if __name__ == '__main__':
 		header=args.header
 	if hasattr(args, 'batch_id'):
 		batch_id=args.batch_id
-	fdict=get_grouped_manifest_files(p['path'],args.drmaa_config)
+	freturn=get_grouped_manifest_files(p['path'],args.drmaa_config)
+	fdict=freturn['inputs']
+	zip_info=freturn['zip_info']
 	#print fdict
 	#exit()
 
 	not_found={}
 	f = open(batch_manifest, 'r')
-	manfname=os.path.join(p['out'],batch_manifest.split('/')[-1].split('.')[0] + '_DEMULTIPLEXED' + '.manifest')
+	man_name=batch_manifest.split('/')[-1].split('.')[0] + '_DEMULTIPLEXED' + '.manifest'
+	manfname=os.path.join(p['out'],man_name)
+	mantmp='.tmp_' + man_name
 	print str(manfname)
-	manfile=open(manfname,'w')
+	manfile=open(mantmp,'w')
 	for line in f:
 		if not line.startswith("#"):  # This should really only happen once
 			line = line.strip().split("\t")
@@ -175,4 +233,8 @@ if __name__ == '__main__':
 		for i in not_found.keys():
 			print i + ' '.join(not_found[i])
 	print 'wrote to ' + manfname
+	if zip_info['job_type'] != '':
+		check_done(zip_info)
+	cp_cmd='mv '+mantmp+ ' ' + manfname
+	os.system(cp_cmd) 
 	print 'manifests generator done'
