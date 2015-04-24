@@ -62,7 +62,7 @@ def get_grouped_manifest_files(directory, drmaa_cfg):
 		'read2'	:'r4',
 		'r2'	:'r4',
 		'out1'	:'r1',
-		'out2'	:'r4',
+		'out2'	:'r2',
 		}
 	# create a reverse dictionary to verify mappings
 	rcols_rev=list(set(rcols.values()))
