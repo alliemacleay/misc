@@ -53,10 +53,10 @@ def get_grouped_manifest_files(directory, drmaa_cfg):
 	needs_zipping = False
 
 	# create a mapping for the file names
-	rcols={'index1'	:'r3',
-		'i1'	:'r3',
-		'index2':'r2',
-		'i2'	:'r2',
+	rcols={#'index1'	:'r3',
+		#'i1'	:'r3',
+		#'index2':'r2',
+		#'i2'	:'r2',
 		'read1'	:'r1',
 		'r1'	:'r1',
 		'read2'	:'r4',
