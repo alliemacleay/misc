@@ -219,7 +219,7 @@ if __name__ == '__main__':
 				if len(fdict[prefix]['unmapped_files'])>0:
 					print 'Warning: Some files did not adhere to naming conventions and were not assigned written to manifest'
 					print '\tFiles: '+'\n'.join(fdict[prefix]['unmapped_files'])
-				text += "\t".join(line) + "\n"
+				text = "\t".join(line) + "\n"
 				manfile.write(text)
 				del fdict[prefix]
 			else:
