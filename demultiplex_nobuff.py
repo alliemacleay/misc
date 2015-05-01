@@ -28,6 +28,7 @@ parser.add_argument('--p5_barcodes')
 parser.add_argument('--p7_barcodes')
 parser.add_argument('--out_dir', default='.')
 parser.add_argument('--out_fname', default='')
+parser.add_argument('--base_mask', default='Y150n,I8,I16,Y150n')
 args = vars(parser.parse_args())
 out_dir = args['out_dir']
 
