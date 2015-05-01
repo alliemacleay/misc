@@ -39,6 +39,8 @@ def get_fid(fname):
 			id[0]=p
 		elif p[0]=='P':
 			id[1]=p
+	for n in range(2):
+		id[n]=id[n].split('.')[0]
 	fid='_'.join(id)
 	return fid
 
