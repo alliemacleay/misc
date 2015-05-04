@@ -92,7 +92,7 @@ def check_done(group_id):
             print 'Job timed out'
             done=1
         else:
-            if are_jobs_done(group):
+            if are_jobs_done(group_id):
                 print 'No running jobs found'
                 done=1
             time.sleep(10)
