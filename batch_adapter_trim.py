@@ -112,7 +112,7 @@ def get_group_id(group):
                     num=0
         if int(num) > max:
             max = int(num)
-    print 'last id was ' + max
+    print 'last id was ' + str(max)
     return (group + '/' + str(max+1) + "_trim")
 
 def are_jobs_done(group,lsf_ct):
