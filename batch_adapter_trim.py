@@ -82,7 +82,7 @@ def get_names(dir):
 # Delay completion of script until all
 # files are written
 #-----------------------------------------
-def check_done(group_id):
+def check_done(group_id,ct):
     start = time.time()
     timeout = (24 * 60 * 60)  # 24 hours
     done = 0
@@ -92,7 +92,7 @@ def check_done(group_id):
             print 'Job timed out'
             done=1
         else:
-            if are_jobs_done(group_id):
+            if are_jobs_done(group_id,ct):
                 print 'No running jobs found'
                 done=1
             time.sleep(10)
@@ -100,10 +100,11 @@ def check_done(group_id):
 
 def get_group_id(group):
     i = os.popen("bjgroup | grep "+ group).read()
+    i = i.split('\n')
     num=''
     max=0
     for line in i:
-        num=line.strip().split('_')[0]
+        num=line.strip().split('_')[0].split('/')[-1]
         if str(num)=='':
             num=0
         if type(num) is str:
@@ -111,10 +112,10 @@ def get_group_id(group):
                     num=0
         if int(num) > max:
             max = int(num)
-    print max
-    return (group + '/' + str(max) + "_trim")
+    print 'last id was ' + max
+    return (group + '/' + str(max+1) + "_trim")
 
-def are_jobs_done(group):
+def are_jobs_done(group,lsf_ct):
     status=os.popen("bjobs -g " + group).read()
     ct=0
     group_status=True
@@ -125,6 +126,8 @@ def are_jobs_done(group):
         status=line.strip().split('\t')[2]
         if status == 'RUN':
             group_status=False
+        if( (ct-1) != lsf_ct):
+            print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
         return group_status
 
 
@@ -176,15 +179,15 @@ if __name__ == '__main__':
             cmd = get_cmd(tag, args.script, p)
         else:
             cmd = 'bsub -q medium -u am282 -o ' + os.path.join(args.log, 'lsf_out.log') + ' -e ' + os.path.join(
-                args.log, 'lsf_err.log') + lsf_group + ' ' + get_cmd(tag, args.script, p)
+                args.log, 'lsf_err.log') + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
             # Keep track of lsf job for listener
-            count_lsf = count_lsf + 2
+            count_lsf = count_lsf + 1
 
         print 'batch process running command:\n' + cmd
         os.system(cmd)
 
     if (count_lsf > 0):
         if lsf_group != '':
-            check_done(lsf_group)
+            check_done(lsf_group, count_lsf)
     print 'batch_process done'
 			
