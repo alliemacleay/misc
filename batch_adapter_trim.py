@@ -25,6 +25,7 @@ def get_cmd(group, prog, params):
     path = '.'
     outdir = ''
     cmd = ''
+    job_group = ''
     a1 = ''
     a2 = ''
     if 'path' in params.keys():
@@ -37,6 +38,8 @@ def get_cmd(group, prog, params):
             outdir = os.path.abspath(outdir)[1:]
         if (outdir[-1] != '/'):
             outdir = outdir + '/'
+    if 'job_group' in params.keys():
+        job_group = params['job_group']
     if 'a1' in params.keys():
         a1 = params['a1']
     if 'a1' in params.keys():
@@ -79,30 +82,51 @@ def get_names(dir):
 # Delay completion of script until all
 # files are written
 #-----------------------------------------
-def check_done(file_num, path):
+def check_done(group_id):
     start = time.time()
     timeout = (24 * 60 * 60)  # 24 hours
     done = 0
 
-    while done == 0:
-        files = next(os.walk(path))[2]
-        all_closed = 0
-        if len(files) == file_num:
-            all_closed = 1
-        for f in files:
-            if f.find('tmp') > 0:
-                all_closed = 0
-                print 'found tmp file ' + f + '.  Waiting...'
-                continue
-        if all_closed == 1:
-            done = 1
-        elif (time.time() - start) > timeout:
-            done = 1
+    while done==0:
+        if (time.time()-start)>timeout:
             print 'Job timed out'
+            done=1
         else:
-            time.sleep(5)
-        print 'checking for job completion after waiting %d seconds' % (time.time() - start)
-        print 'searching for ' + str(file_num) + ', found ' + str(len(files)) + ' files in ' + path
+            if are_jobs_done(group):
+                print 'No running jobs found'
+                done=1
+            time.sleep(10)
+            print 'checking for job completion after waiting %d seconds' % (time.time()-start)
+
+def get_group_id(group):
+    i = os.popen("bjgroup | grep "+ group).read()
+    num=''
+    max=0
+    for line in i:
+        num=line.strip().split('_')[0]
+        if str(num)=='':
+            num=0
+        if type(num) is str:
+                if not num.isdigit():
+                    num=0
+        if int(num) > max:
+            max = int(num)
+    print max
+    return (group + '/' + str(max) + "_trim")
+
+def are_jobs_done(group):
+    status=os.popen("bjobs -g " + group).read()
+    ct=0
+    group_status=True
+    for line in status:
+        ct+=1
+        if ct==1:
+            continue
+        status=line.strip().split('\t')[2]
+        if status == 'RUN':
+            group_status=False
+        return group_status
+
 
 #-----------------------------------------
 #	MAIN
@@ -123,6 +147,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     p = {}
+    lsf_group=''
     if hasattr(args, 'dir'):
         p['path'] = args.dir
     if hasattr(args, 'out'):
@@ -139,6 +164,8 @@ if __name__ == '__main__':
     if len(f) < 1:
         print "Error: No file prefixes were found in " + args.dir + "."
     count_lsf = 0
+    if not args.bsub_off:
+        lsf_group=' -g ' + get_group_id("/demux")
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
@@ -147,7 +174,7 @@ if __name__ == '__main__':
             cmd = get_cmd(tag, args.script, p)
         else:
             cmd = 'bsub -q medium -u am282 -o ' + os.path.join(args.log, 'lsf_out.log') + ' -e ' + os.path.join(
-                args.log, 'lsf_err.log') + ' ' + get_cmd(tag, args.script, p)
+                args.log, 'lsf_err.log') + lsf_group + ' ' + get_cmd(tag, args.script, p)
             # Keep track of lsf job for listener
             count_lsf = count_lsf + 2
 
