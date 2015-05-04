@@ -123,7 +123,11 @@ def are_jobs_done(group,lsf_ct):
         ct+=1
         if ct==1:
             continue
-        status=line.strip().split('\t')[2]
+        status_arr=line.strip().split('\t')
+        if (status_arr)>1:
+            status=status_arr[2]
+        else:
+            status=''
         if status == 'RUN':
             group_status=False
         if( (ct-1) != lsf_ct):
