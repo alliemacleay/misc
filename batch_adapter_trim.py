@@ -148,6 +148,7 @@ if __name__ == '__main__':
 
     p = {}
     lsf_group=''
+    lsf_group_cmd=''
     if hasattr(args, 'dir'):
         p['path'] = args.dir
     if hasattr(args, 'out'):
@@ -165,7 +166,8 @@ if __name__ == '__main__':
         print "Error: No file prefixes were found in " + args.dir + "."
     count_lsf = 0
     if not args.bsub_off:
-        lsf_group=' -g ' + get_group_id("/demux")
+        lsf_group = get_group_id("/demux")
+        lsf_group_cmd=' -g ' + lsf_group
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
@@ -182,6 +184,7 @@ if __name__ == '__main__':
         os.system(cmd)
 
     if (count_lsf > 0):
-        check_done(count_lsf, args.out)
+        if lsf_group != '':
+            check_done(lsf_group)
     print 'batch_process done'
 			
