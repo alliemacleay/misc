@@ -139,9 +139,9 @@ def are_jobs_done(group,lsf_ct):
             group_status=False
         if status== 'PEND':
             group_status=False
-        if( (ct-1) != lsf_ct):
-            print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
-        return group_status
+    if( (ct-1) != lsf_ct):
+        print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
+    return group_status
 
 
 #-----------------------------------------
