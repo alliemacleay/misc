@@ -104,9 +104,12 @@ def get_group_id(group):
     num=''
     max=0
     for line in i:
-        if are_jobs_done(line.split()[0],0):
-            # clean old jobs	
-            os.system("bgdel " + line)
+	group_arr=line.split()
+        if len(group_arr)>1:
+	    group_name=group_arr[0]
+	    if are_jobs_done(group_name,0):
+	        # clean old jobs	
+	        os.system("bgdel " + line)
         num=line.strip().split('_')[0].split('/')[-1]
         if str(num)=='':
             num=0
