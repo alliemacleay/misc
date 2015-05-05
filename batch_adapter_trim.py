@@ -123,7 +123,7 @@ def are_jobs_done(group,lsf_ct):
         ct+=1
         if ct==1:
             continue
-        status_arr=line.strip().split('\t')
+        status_arr=line.strip().split()
         if len(status_arr)>2:
             status=status_arr[2]
         else:
