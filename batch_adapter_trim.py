@@ -110,7 +110,7 @@ def get_group_id(group):
 	    group_name=group_arr[0]
 	    if are_jobs_done(group_name,0):
 	        # clean old jobs	
-	        os.system("bgdel " + line)
+	        os.system("bgdel " + group_name)
         num=line.strip().split('_')[0].split('/')[-1]
         if str(num)=='':
             num=0
@@ -144,7 +144,7 @@ def are_jobs_done(group,lsf_ct):
             run_ct+=1
     if( (ct-1) != lsf_ct):
         print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
-    print str(run_ct) + " jobs are currently running or pending in group " + group
+    print "" + str(run_ct) + " jobs are currently running or pending in group " + group
     return group_status
 
 
