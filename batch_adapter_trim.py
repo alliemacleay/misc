@@ -122,10 +122,10 @@ def get_group_id(group):
     return (group + '/' + str(max+1) + "_trim")
 
 def are_jobs_done(group,lsf_ct):
-    status=os.popen("bjobs -g " + group).read().split('\n')
+    jobs=os.popen("bjobs -g " + group).read().split('\n')
     ct=0
     group_status=True
-    for line in status:
+    for line in jobs:
         ct+=1
         if ct==1:
             continue
@@ -134,7 +134,7 @@ def are_jobs_done(group,lsf_ct):
             status=status_arr[2]
         else:
             status=''
-        if status == 'RUN':
+        if status== 'RUN':
             group_status=False
         if( (ct-1) != lsf_ct):
             print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
