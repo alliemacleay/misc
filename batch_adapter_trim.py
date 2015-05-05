@@ -125,6 +125,7 @@ def get_group_id(group):
 def are_jobs_done(group,lsf_ct):
     jobs=os.popen("bjobs -g " + group).read().split('\n')
     ct=0
+    run_ct=0
     group_status=True
     for line in jobs:
         ct+=1
@@ -137,10 +138,13 @@ def are_jobs_done(group,lsf_ct):
             status=''
         if status== 'RUN':
             group_status=False
+            run_ct+=1
         if status== 'PEND':
             group_status=False
+            run_ct+=1
     if( (ct-1) != lsf_ct):
         print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
+    print str(run_ct) + " jobs are currently running or pending in group " + group
     return group_status
 
 
