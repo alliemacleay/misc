@@ -93,7 +93,7 @@ def check_done(group_id,ct):
             done=1
         else:
             if are_jobs_done(group_id,ct):
-                print 'No running jobs found'
+                print 'No running jobs found in group ' + group_id
                 done=1
             time.sleep(10)
             print 'checking for job completion after waiting %d seconds' % (time.time()-start)
@@ -116,7 +116,7 @@ def get_group_id(group):
     return (group + '/' + str(max+1) + "_trim")
 
 def are_jobs_done(group,lsf_ct):
-    status=os.popen("bjobs -g " + group).read()
+    status=os.popen("bjobs -g " + group).read().split('\n')
     ct=0
     group_status=True
     for line in status:
