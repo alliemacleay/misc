@@ -92,11 +92,12 @@ def check_done(group_id,ct):
             print 'Job timed out'
             done=1
         else:
+            time.sleep(10)
+            print 'checking for job completion after waiting %d seconds' % (time.time()-start)
             if are_jobs_done(group_id,ct):
                 print 'No running jobs found in group ' + group_id
                 done=1
-            time.sleep(10)
-            print 'checking for job completion after waiting %d seconds' % (time.time()-start)
+    return
 
 def get_group_id(group):
     i = os.popen("bjgroup | grep "+ group).read()
@@ -135,6 +136,8 @@ def are_jobs_done(group,lsf_ct):
         else:
             status=''
         if status== 'RUN':
+            group_status=False
+        if status== 'PEND':
             group_status=False
         if( (ct-1) != lsf_ct):
             print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
