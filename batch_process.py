@@ -25,6 +25,7 @@ def get_cmd(group, umitag, params):
 	path='.'
 	outdir=''
 	cmd=''
+	ext='fastq'
 	if 'path' in params.keys():
 		path=params['path']
 	if 'out' in params.keys():
@@ -35,10 +36,12 @@ def get_cmd(group, umitag, params):
 			outdir=os.path.abspath(outdir)[1:]
 		if(outdir[-1] != '/'):
 			outdir=outdir+'/'
-	fastq_r1=path + '/' + group +'.r1.fastq'
-	fastq_r2=path + '/' + group+'.r2.fastq'
-	out1= '' + group+'.out1.fastq'
-	out2= '' + group+'.out2.fastq'
+	if 'ext' in params.keys():
+		ext=params['ext']
+	fastq_r1=path + '/' + group +'.r1.' + ext
+	fastq_r2=path + '/' + group+'.r2.' + ext
+	out1= '' + group+'.out1.' + ext
+	out2= '' + group+'.out2.' + ext
 	fastq_i1=path + '/' + group +'.i1.fastq'
 	fastq_i2=path + '/' + group+'.i2.fastq'
 	cmd= (cmd+""" \
@@ -69,6 +72,23 @@ def get_names(dir):
 	files=map(lambda x: x.split('.')[0], files)
 	dfiles=set(files)
 	return dfiles
+
+#-----------------------------------------
+# Return extension of the files
+#-----------------------------------------
+def get_ext(dir):
+	remove = ['i','r','index','read']
+	keep = ''
+	ext = 'fastq'
+	file=next(os.walk(dir))[2][0]
+	for m in remove:
+		if file.lower().find(m) > -1:
+			keep = m
+	if keep == '':
+		ext='fastq'
+	else:
+		ext= file[ file.find(keep) + len(keep) + 1:]
+	return ext
 
 #-----------------------------------------
 # Delay completion of script until all
@@ -125,6 +145,7 @@ if __name__ == '__main__':
 	f=get_names(args.dir)
 	if len(f)<1:
 		print "Error: No file prefixes were found in "+args.dir+"."
+	p['ext']=get_ext(args.dir)
 	count_lsf=0
 	for tag in f:
 		if (tag.find('undetermined') > -1 ):
