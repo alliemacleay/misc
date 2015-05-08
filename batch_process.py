@@ -82,12 +82,16 @@ def get_ext(dir):
 	ext = 'fastq'
 	file=next(os.walk(dir))[2][0]
 	for m in remove:
-		if file.lower().find(m) > -1:
-			keep = m
+		if keep != '':
+			continue
+		for n in [1,2]:
+			piece = '.' + m + str(n) + '.'
+			if file.lower().find(piece) > -1:
+				keep = piece
 	if keep == '':
 		ext='fastq'
 	else:
-		ext= file[ file.find(keep) + len(keep) + 1:]
+		ext= file[ file.find(keep) + len(keep):]
 	return ext
 
 #-----------------------------------------
