@@ -14,12 +14,9 @@ import time
 # Subroutines
 #-----------------------------------------
 
-# return barcode prefix
-# assumes it is the last 2 fields of the filename
+# return file prefix
 def get_bc_prefix(filename):
 	prefix=filename.split('.')[0]
-	if prefix.find('_')>-1:
-		prefix='_'.join(prefix.split('_')[-2:])
 	return prefix
 
 # - create a dictionary of manifest files grouped by 
@@ -198,6 +195,7 @@ if __name__ == '__main__':
 	manfile=open(mantmp,'w')
 	for line in f:
 		if not line.startswith("#"):  # This should really only happen once
+			found_prefix = False
 			line = line.strip().split("\t")
 			if len(line)<7:		# line is blank or incorrect format
 				continue
@@ -206,7 +204,10 @@ if __name__ == '__main__':
 			if ia>-1:
 				cid_id=cid_id[ia+9:]
 			prefix=p5 + '_' + p7
-			if prefix in fdict.keys():
+			for rec_name in fdict.keys():
+				if rec_name.find(prefix)>-1:
+					found_prefix = True
+			if found_prefix:
 				if len(line)<8:
 					for ln in range(len(line)-1,8):
 						line.append('')
