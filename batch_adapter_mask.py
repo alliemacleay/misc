@@ -86,41 +86,75 @@ def check_done(group_id,ct):
     start = time.time()
     timeout = (24 * 60 * 60)  # 24 hours
     done = 0
+    pr_ct = 0
 
     while done==0:
+        pr_ct+=1
         if (time.time()-start)>timeout:
             print 'Job timed out'
             done=1
         else:
             time.sleep(10)
-            print 'checking for job completion after waiting %d seconds' % (time.time()-start)
+            if pr_ct % 6 == 0:
+                print 'checking for job completion after waiting %d seconds' % (time.time()-start)
             if are_jobs_done(group_id,ct):
                 print 'No running jobs found in group ' + group_id
                 done=1
     return
 
-def get_group_id(group):
-    i = os.popen("bjgroup | grep "+ group).read()
-    i = i.split('\n')
-    num=''
-    max=0
-    for line in i:
-	group_arr=line.split()
-        if len(group_arr)>1:
-	    group_name=group_arr[0]
-	    if are_jobs_done(group_name,0):
-	        # clean old jobs	
-	        os.system("bgdel " + group_name)
-        num=line.strip().split('_')[0].split('/')[-1]
-        if str(num)=='':
-            num=0
-        if type(num) is str:
-                if not num.isdigit():
-                    num=0
-        if int(num) > max:
-            max = int(num)
-    print 'last id was ' + str(max)
-    return (group + '/' + str(max+1) + "_trim")
+def wait_while_job_running(jobname,maxtm):
+    done = is_job_done(jobname)
+    tmst = time.time()
+    duration = 0
+    while done == False and (duration < maxtm):
+        print "Waiting for job " + jobname + " to complete \n" + str(duration) + " seconds have elapsed."
+        time.sleep(10)
+        duration = time.time() - tmst
+        done = is_job_done(jobname)
+    return
+
+# -----------------------------------------
+# Zip it
+#-----------------------------------------
+def gzip_if_not(folder,bsub_off,out,err):
+    zipping = False
+    zipped = {}
+    for file in next(os.walk(folder))[2]:
+        parts = file.split('.')
+        if parts[-1] != 'gz':
+             if parts[0] not in zipped.keys():
+                 zipped[parts[0]]=1
+                 zipping = True
+                 gzip(os.path.join(folder,parts[0] + '*'),'gz'+parts[0],bsub_off,out,err)
+    return zipping
+
+def gzip(filename,jobname,bsub_off,out,err):
+    cmd = 'gzip ' + filename
+    if not bsub_off:
+       cmd = bsub_cmd(out,err) + ' -J ' + jobname + ' ' + cmd
+    os.system(cmd)
+    return
+# -----------------------------------------
+# LSF utilities
+#-----------------------------------------
+def bsub_cmd(out,err):
+    txt = 'bsub -q medium -u am282 -o ' + out + ' -e ' + err + ' '
+    return txt
+
+def is_job_done(jobname):
+    done = True
+    ct=0
+    jobs = os.popen("bjobs -J " + jobname).read().split('\n')
+    for line in jobs:
+        ct+=1
+        if ct == 1:
+            continue
+        status = get_job_status(line)
+        if status == 'RUN':
+            done = False
+        if status == 'PEND':
+            done = False
+    return done
 
 def are_jobs_done(group,lsf_ct):
     jobs=os.popen("bjobs -g " + group).read().split('\n')
@@ -131,11 +165,7 @@ def are_jobs_done(group,lsf_ct):
         ct+=1
         if ct==1:
             continue
-        status_arr=line.strip().split()
-        if len(status_arr)>2:
-            status=status_arr[2]
-        else:
-            status=''
+        status=get_job_status(line)
         if status== 'RUN':
             group_status=False
             run_ct+=1
@@ -147,6 +177,37 @@ def are_jobs_done(group,lsf_ct):
     print "" + str(run_ct) + " jobs are currently running or pending in group " + group
     return group_status
 
+def get_job_status(line):
+    status=''
+    status_arr=line.strip().split()
+    if len(status_arr)>2:
+        status=status_arr[2]
+    else:
+        status=''
+    return status
+
+def get_group_id(group):
+    i = os.popen("bjgroup | grep "+ group).read()
+    i = i.split('\n')
+    num=''
+    max=0
+    for line in i:
+        group_arr=line.split()
+        if len(group_arr)>1:
+            group_name=group_arr[0]
+            if are_jobs_done(group_name,0):
+                # clean old jobs
+                os.system("bgdel " + group_name)
+            num=line.strip().split('_')[0].split('/')[-1]
+        if str(num)=='':
+            num=0
+        if type(num) is str:
+                if not num.isdigit():
+                    num=0
+        if int(num) > max:
+            max = int(num)
+    print 'last id was ' + str(max)
+    return group + '/' + str(max+1) + "_trim"
 
 #-----------------------------------------
 #	MAIN
@@ -181,6 +242,11 @@ if __name__ == '__main__':
         p['a1']=args.a1
     if hasattr(args, 'a2'):
         p['a2']=args.a1
+    lsf_out = ''
+    lsf_err = ''
+    if not args.bsub_off:
+        lsf_out = os.path.join(args.log, 'lsf_out.log')
+        lsf_err = os.path.join(args.log, 'lsf_err.log')
     f = get_names(args.dir)
     if len(f) < 1:
         print "Error: No file prefixes were found in " + args.dir + "."
@@ -188,6 +254,7 @@ if __name__ == '__main__':
     if not args.bsub_off:
         lsf_group = get_group_id("/demux")
         lsf_group_cmd=' -g ' + lsf_group
+    needed_zip = gzip_if_not(args.dir,args.bsub_off,lsf_out,lsf_err)
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
@@ -195,8 +262,9 @@ if __name__ == '__main__':
         elif (args.bsub_off):
             cmd = get_cmd(tag, args.script, p)
         else:
-            cmd = 'bsub -q medium -u am282 -o ' + os.path.join(args.log, 'lsf_out.log') + ' -e ' + os.path.join(
-                args.log, 'lsf_err.log') + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
+            if needed_zip:
+                wait_while_job_running('gz'+tag,60*10) # ten minutes max
+            cmd = bsub_cmd(lsf_out,lsf_err) + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
             # Keep track of lsf job for listener
             count_lsf = count_lsf + 1
 
