@@ -204,25 +204,27 @@ if __name__ == '__main__':
 			if ia>-1:
 				cid_id=cid_id[ia+9:]
 			prefix=p5 + '_' + p7
+			prefix_key=''
 			for rec_name in fdict.keys():
 				if rec_name.find(prefix)>-1:
 					found_prefix = True
+					prefix_key=rec_name
 			if found_prefix:
 				if len(line)<8:
 					for ln in range(len(line)-1,8):
 						line.append('')
 				line[8]='' # Clear run_folder
 				for fqty in ['r1','r2','r3','r4']:
-					if fqty in fdict[prefix].keys():
-						line.append(fdict[prefix][fqty])
+					if fqty in fdict[prefix_key].keys():
+						line.append(fdict[prefix_key][fqty])
 					else:
 						line.append('')
-				if len(fdict[prefix]['unmapped_files'])>0:
+				if len(fdict[prefix_key]['unmapped_files'])>0:
 					print 'Warning: Some files did not adhere to naming conventions and were not assigned written to manifest'
-					print '\tFiles: '+'\n'.join(fdict[prefix]['unmapped_files'])
+					print '\tFiles: '+'\n'.join(fdict[prefix_key]['unmapped_files'])
 				text = "\t".join(line) + "\n"
 				manfile.write(text)
-				del fdict[prefix]
+				del fdict[prefix_key]
 			else:
 				not_found[prefix]=line
 		else:
