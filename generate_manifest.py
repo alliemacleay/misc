@@ -192,9 +192,9 @@ if __name__ == '__main__':
 	manfname=os.path.join(p['out'],man_name)
 	mantmp='.tmp_' + man_name
 	print str(manfname)
+	r1col=9 # default column for R1
 	manfile=open(mantmp,'w')
 	for line in f:
-		r1col=9 # default column for R1
 		if not line.startswith("#"):  # This should really only happen once
 			found_prefix = False
 			line = line.strip().split("\t")
@@ -216,8 +216,10 @@ if __name__ == '__main__':
 						line.append('')
 				line[8]='' # Clear run_folder
 				# pad until R1 column
-				for ir1 in range(0,r1col-9):
-					line[9+ir1]=''
+				RUNCOL=10 # Run column - last column before R1
+				if r1col>RUNCOL:
+					for ir1 in range(0,r1col-RUNCOL):
+						line.append('')
 				for fqty in ['r1','r2','r3','r4']:
 					if fqty in fdict[prefix_key].keys():
 						line.append(fdict[prefix_key][fqty])
