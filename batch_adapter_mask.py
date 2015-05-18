@@ -241,7 +241,7 @@ if __name__ == '__main__':
     if hasattr(args, 'a1'):
         p['a1']=args.a1
     if hasattr(args, 'a2'):
-        p['a2']=args.a1
+        p['a2']=args.a2
     lsf_out = ''
     lsf_err = ''
     if not args.bsub_off:

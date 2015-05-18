@@ -45,7 +45,7 @@ def get_cmd(group, prog, params):
     if 'a1' in params.keys():
         a2 = params['a2']
     fastq_r1 = os.path.join(path, group + '.r1.fastq.gz')
-    fastq_r2 = os.path.join(path ,group + '.r2.fastq.gz')
+    fastq_r2 = os.path.join(path, group + '.r2.fastq.gz')
     out1 = '' + group + '_trim.r1.fastq.gz'
     out2 = '' + group + '_trim.r2.fastq.gz'
     cmd = (cmd + """ \
@@ -81,83 +81,90 @@ def get_names(dir):
 # -----------------------------------------
 # Delay completion of script until all
 # files are written
-#-----------------------------------------
-def check_done(group_id,ct):
+# -----------------------------------------
+def check_done(group_id, ct):
     start = time.time()
     timeout = (24 * 60 * 60)  # 24 hours
     done = 0
 
-    while done==0:
-        if (time.time()-start)>timeout:
+    while done == 0:
+        if (time.time() - start) > timeout:
             print 'Job timed out'
-            done=1
+            done = 1
         else:
             time.sleep(10)
-            print 'checking for job completion after waiting %d seconds' % (time.time()-start)
-            if are_jobs_done(group_id,ct):
+            print 'checking for job completion after waiting %d seconds' % (time.time() - start)
+            if are_jobs_done(group_id, ct):
                 print 'No running jobs found in group ' + group_id
-                done=1
+                done = 1
     return
 
-def get_group_id(group):
-    i = os.popen("bjgroup | grep "+ group).read()
-    i = i.split('\n')
-    num=''
-    max=0
-    for line in i:
-	group_arr=line.split()
-        if len(group_arr)>1:
-	    group_name=group_arr[0]
-	    if are_jobs_done(group_name,0):
-	        # clean old jobs	
-	        os.system("bgdel " + group_name)
-        num=line.strip().split('_')[0].split('/')[-1]
-        if str(num)=='':
-            num=0
-        if type(num) is str:
-                if not num.isdigit():
-                    num=0
-        if int(num) > max:
-            max = int(num)
-    print 'last id was ' + str(max)
-    return (group + '/' + str(max+1) + "_trim")
 
-def are_jobs_done(group,lsf_ct):
-    jobs=os.popen("bjobs -g " + group).read().split('\n')
-    ct=0
-    run_ct=0
-    group_status=True
+# -----------------------------------------
+# LSF utilities
+# -----------------------------------------
+def get_group_id(group):
+    i = os.popen("bjgroup | grep " + group).read()
+    i = i.split('\n')
+    num = ''
+    max = 0
+    for line in i:
+        group_arr = line.split()
+    if len(group_arr) > 1:
+        group_name = group_arr[0]
+        if are_jobs_done(group_name, 0):
+            # clean old jobs
+            os.system("bgdel " + group_name)
+    num = line.strip().split('_')[0].split('/')[-1]
+    if str(num) == '':
+        num = 0
+    if type(num) is str:
+        if not num.isdigit():
+            num = 0
+    if int(num) > max:
+        max = int(num)
+
+    print 'last id was ' + str(max)
+    return (group + '/' + str(max + 1) + "_trim")
+
+
+def are_jobs_done(group, lsf_ct):
+    jobs = os.popen("bjobs -g " + group).read().split('\n')
+    ct = 0
+    run_ct = 0
+    group_status = True
     for line in jobs:
-        ct+=1
-        if ct==1:
+        ct += 1
+        if ct == 1:
             continue
-        status_arr=line.strip().split()
-        if len(status_arr)>2:
-            status=status_arr[2]
+        status_arr = line.strip().split()
+        if len(status_arr) > 2:
+            status = status_arr[2]
         else:
-            status=''
-        if status== 'RUN':
-            group_status=False
-            run_ct+=1
-        if status== 'PEND':
-            group_status=False
-            run_ct+=1
-    if( (ct-1) != lsf_ct):
-        print 'Different number of jobs passed in ('+str(lsf_ct)+') and recovered (' + str(ct-1) + ')'
+            status = ''
+        if status == 'RUN':
+            group_status = False
+            run_ct += 1
+        if status == 'PEND':
+            group_status = False
+            run_ct += 1
+    if ( (ct - 1) != lsf_ct):
+        print 'Different number of jobs passed in (' + str(lsf_ct) + ') and recovered (' + str(ct - 1) + ')'
     print "" + str(run_ct) + " jobs are currently running or pending in group " + group
     return group_status
 
 
-#-----------------------------------------
+# -----------------------------------------
 #	MAIN
 # run a program (SeqPrep) for all files in a directory
 # that have the same prefix
 #-----------------------------------------
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-            description="Run command for removing adapter sequecnes in batches of similarly prefixed names.")
+        description="Run command for removing adapter sequecnes in batches of similarly prefixed names.")
     parser.add_argument('--dir', default='.', help='directory containing output of umi demultiplex')
-    parser.add_argument('--script', default='./SeqPrep', help='SeqPrep absolute path.  default is SeqPrep in current directory')
+    parser.add_argument('--script', default='./SeqPrep',
+                        help='SeqPrep absolute path.  default is SeqPrep in current directory')
     parser.add_argument('--a1', required=True, help='Adapter 1')
     parser.add_argument('--a2', required=True, help='Adapter 2')
     parser.add_argument('--out', default='tagout', help='directory to deposit output files')
@@ -167,8 +174,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     p = {}
-    lsf_group=''
-    lsf_group_cmd=''
+    lsf_group = ''
+    lsf_group_cmd = ''
     if hasattr(args, 'dir'):
         p['path'] = args.dir
     if hasattr(args, 'out'):
@@ -178,16 +185,16 @@ if __name__ == '__main__':
         os.system('mkdir -p ' + args.log)
         os.system('ls ' + p['path'] + ' >> ' + args.log + '/ls_inputdir.txt')
     if hasattr(args, 'a1'):
-        p['a1']=args.a1
+        p['a1'] = args.a1
     if hasattr(args, 'a2'):
-        p['a2']=args.a1
+        p['a2'] = args.a2
     f = get_names(args.dir)
     if len(f) < 1:
         print "Error: No file prefixes were found in " + args.dir + "."
     count_lsf = 0
     if not args.bsub_off:
         lsf_group = get_group_id("/demux")
-        lsf_group_cmd=' -g ' + lsf_group
+        lsf_group_cmd = ' -g ' + lsf_group
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
