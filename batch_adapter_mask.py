@@ -116,7 +116,7 @@ def wait_while_job_running(jobname,maxtm):
 # -----------------------------------------
 # Zip it
 #-----------------------------------------
-def gzip_if_not(folder,bsub_off,out,err):
+def gzip_if_not(folder,bsub_off,out,err,group_id):
     zipping = False
     zipped = {}
     for file in next(os.walk(folder))[2]:
@@ -125,7 +125,7 @@ def gzip_if_not(folder,bsub_off,out,err):
              if parts[0] not in zipped.keys():
                  zipped[parts[0]]=1
                  zipping = True
-                 gzip(os.path.join(folder,parts[0] + '*'),'gz'+parts[0],bsub_off,out,err)
+                 gzip(os.path.join(folder,parts[0] + '*'),'gz'+group_id+parts[0],bsub_off,out,err)
     return zipping
 
 def gzip(filename,jobname,bsub_off,out,err):
@@ -250,11 +250,13 @@ if __name__ == '__main__':
     f = get_names(args.dir)
     if len(f) < 1:
         print "Error: No file prefixes were found in " + args.dir + "."
-    count_lsf = 0
+    count_lsf = 0 
+    group_id = 'groupID'
     if not args.bsub_off:
         lsf_group = get_group_id("/demux")
+        group_id = lsf_group.split("/demux/")[1]
         lsf_group_cmd=' -g ' + lsf_group
-    needed_zip = gzip_if_not(args.dir,args.bsub_off,lsf_out,lsf_err)
+    needed_zip = gzip_if_not(args.dir,args.bsub_off,lsf_out,lsf_err,group_id)
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
@@ -263,7 +265,7 @@ if __name__ == '__main__':
             cmd = get_cmd(tag, args.script, p)
         else:
             if needed_zip:
-                wait_while_job_running('gz'+tag,60*10) # ten minutes max
+                wait_while_job_running('gz'+group_id+tag,60*10) # ten minutes max
             cmd = bsub_cmd(lsf_out,lsf_err) + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
             # Keep track of lsf job for listener
             count_lsf = count_lsf + 1

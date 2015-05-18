@@ -194,6 +194,7 @@ if __name__ == '__main__':
 	print str(manfname)
 	manfile=open(mantmp,'w')
 	for line in f:
+		r1col=9 # default column for R1
 		if not line.startswith("#"):  # This should really only happen once
 			found_prefix = False
 			line = line.strip().split("\t")
@@ -214,6 +215,9 @@ if __name__ == '__main__':
 					for ln in range(len(line)-1,8):
 						line.append('')
 				line[8]='' # Clear run_folder
+				# pad until R1 column
+				for ir1 in range(0,r1col-9):
+					line[9+ir1]=''
 				for fqty in ['r1','r2','r3','r4']:
 					if fqty in fdict[prefix_key].keys():
 						line.append(fdict[prefix_key][fqty])
@@ -228,7 +232,13 @@ if __name__ == '__main__':
 			else:
 				not_found[prefix]=line
 		else:
+			# Header file
 			manfile.write(line)	
+			r1ct=0
+			for sl in line.split('\t'):
+				r1ct+=1
+				if 'R1' == sl:
+					r1col=r1ct
 	manfile.close()
 	f.close()
 	if len(not_found) > 0:
