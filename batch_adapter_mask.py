@@ -249,7 +249,8 @@ if __name__ == '__main__':
     if hasattr(args, 'a2'):
         p['a2']=args.a2
     if hasattr(args, 'olen'):
-        p['olen']=args.olen
+        if args.olen is not None:
+            p['olen']=args.olen
     lsf_out = ''
     lsf_err = ''
     if not args.bsub_off:
