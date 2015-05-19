@@ -28,6 +28,7 @@ def get_cmd(group, prog, params):
     job_group = ''
     a1 = ''
     a2 = ''
+    olen = ''
     if 'path' in params.keys():
         path = params['path']
     if 'out' in params.keys():
@@ -44,6 +45,8 @@ def get_cmd(group, prog, params):
         a1 = params['a1']
     if 'a1' in params.keys():
         a2 = params['a2']
+    if 'olen' in params.keys():
+        olen = '-k ' + str(params['olen'])
     fastq_r1 = os.path.join(path, group + '.r1.fastq.gz')
     fastq_r2 = os.path.join(path ,group + '.r2.fastq.gz')
     out1 = '' + group + '_trim.r1.fastq.gz'
@@ -54,7 +57,8 @@ def get_cmd(group, prog, params):
 -1 {outdir}{out1} \
 -2 {outdir}{out2} \
 -A {adapter1} \
--B {adapter2} -z \
+-B {adapter2} \
+-z {olen} \
         """ ).format(
         prog=prog,
         fastq_r1=fastq_r1,
@@ -64,6 +68,7 @@ def get_cmd(group, prog, params):
         out2=out2,
         adapter1=a1,
         adapter2=a2,
+        olen=olen,
     )
     return cmd
 
@@ -221,6 +226,7 @@ if __name__ == '__main__':
     parser.add_argument('--script', default='./SeqPrep', help='SeqPrep absolute path.  default is SeqPrep in current directory')
     parser.add_argument('--a1', required=True, help='Adapter 1')
     parser.add_argument('--a2', required=True, help='Adapter 2')
+    parser.add_argument('--olen', required=False, help='max length of output reads')
     parser.add_argument('--out', default='tagout', help='directory to deposit output files')
     parser.add_argument('--log', default='batch_log', help='directory to deposit bsub log files')
     parser.add_argument('--bsub_off', action='store_true', help='turn bsub off to test on systems without lsf')
@@ -242,6 +248,8 @@ if __name__ == '__main__':
         p['a1']=args.a1
     if hasattr(args, 'a2'):
         p['a2']=args.a2
+    if hasattr(args, 'olen'):
+        p['olen']=args.olen
     lsf_out = ''
     lsf_err = ''
     if not args.bsub_off:
