@@ -23,10 +23,15 @@ if __name__ == '__main__':
 	args=parser.parse_args()
 
 	l=int(args.len)
+	names={}
 	os.system("mkdir -p " + args.out)
 	files = glob.glob(os.path.join(args.dir,"*.fastq.gz"))
 	for f in files:
-		pfx = f.split('.')[0].split('/')[-1]
+		pfx = '.'.join(f.split('.')[:-2]).split('/')[-1]
+		if pfx in names.keys():
+			sys.stderr.write( pfx + " is duplicated!\nExiting\n")
+			sys.exit(1)
+		names[pfx]=1
 		fh = gzip.open(f,'r')
 		out = gzip.open(os.path.join(args.out, pfx + "_padded.fastq.gz"),'wb')
 
@@ -38,14 +43,16 @@ if __name__ == '__main__':
 				#sequence
 				if len(line) < l:
 					line = line + ('N'* (l-len(line)))
-				print line[:l]
-				out.write(line[:l])
-			if ct%4 == 0:
+				#print line[:l]
+				out.write(line[:l] + '\n')
+			elif ct%4 == 0:
 				#quality
 				if len(line) < l:
 					line = line + ('#'* (l-len(line)))
-				print line[:l]
-				out.write(line[:l])
+				#print line[:l]
+				out.write(line[:l] + '\n')
+			else:
+				out.write(line + '\n')
 
 		fh.close()
 		out.close()
