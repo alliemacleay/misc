@@ -179,8 +179,6 @@ def write_stats(d,out,quiet):
 #	MAIN
 #-----------------------------------------
 if __name__ == '__main__':
-	print header_row()
-	exit()
 	parser=argparse.ArgumentParser(description="Compare unordered fastq files")
 	parser.add_argument('--dir1', required=True, help='First directory containing fusion caller output. Could be substituted for a filename.')
 	parser.add_argument('--dir2', required=True, help='Second directory containing fusion caller output.  Could be substituted for a filename.')
