@@ -30,7 +30,7 @@ def get_fid(fname):
 	fid=''
 	id=['','']
 	Abc=0
-	Pbf=0
+	Pbc=0
 	for p in fname.split('_'):
 		if p[0]=='A' and (Abc==0):
 			id[0]=p
