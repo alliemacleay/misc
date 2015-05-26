@@ -32,6 +32,9 @@ def get_fid(fname):
 	Abc=0
 	Pbc=0
 	for p in fname.split('_'):
+		if len(p)<1:
+			print "Unknown error for file: "+fname
+			continue
 		if p[0]=='A' and (Abc==0):
 			id[0]=p
 			Abc=1
