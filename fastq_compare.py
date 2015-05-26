@@ -11,8 +11,13 @@ import glob
 import gzip
 
 def debug_here():
-	# break at line 12 or 14
+	# break at line 13 or 15
 	return
+
+def header_row():
+	hr = ['ID','key', 'data']
+	return '\t'.join(hr)
+
 def get_files(dir,name):
 	flist=[]
 	fpath=os.path.join(dir,name)
@@ -28,6 +33,7 @@ def get_files(dir,name):
 	return flist
 
 def get_fid(fname):
+	return '1'
 	fid=''
 	id=['','']
 	for p in fname.split('_'):
@@ -39,9 +45,19 @@ def get_fid(fname):
 	return fid
 
 def get_key(h):
-	debug_here()
 	info=h.split(':')
-	return info[6]
+	return info[5]+'_'+info[6]
+
+def row_to_string(fid,key,data):
+	row='\t'.join([fid,key])
+	row=row+'\t'+ str(data)
+	return row
+
+def totals_to_string(totals):
+	txt=''
+	for k in totals.keys():
+		txt=txt+str(k) + '\t' + str(totals[k]) + '\t'
+	return txt
 
 def get_stats(d,flist):
 	ct_same=0
@@ -61,7 +77,8 @@ def get_stats(d,flist):
 	d['pass']=d['pass']+1
 	d['totals'][d['pass']]=0
 
-	d['fq']={}
+	if 'fq' not in d.keys():
+		d['fq']={}
 
 	for file in flist:
 		fh=''
@@ -86,6 +103,8 @@ def get_stats(d,flist):
 				d['totals'][d['pass']]=d['totals'][d['pass']]+1
 				if (d['totals'][d['pass']] % 10000 ==0):
 					print str(d['totals'][d['pass']]) +' reads in pass '+str(d['pass'])
+					if d['pass']==2:
+						debug_here()
 				if d['pass']>1:
 					if k in d['fq'][fid].keys():
 						ct_miss_right-=1
@@ -93,24 +112,34 @@ def get_stats(d,flist):
 						cmp_res='same'
 						diff=[]
 						cmp=d['fq'][fid][k]['data']
-						for l in range(len(cmp)):
-							if cmp[l] != entry[l+1]:
-								cmp_res='diff'
-								diff.append(str(cmp[l]) + '<>' + str(entry[l+1]))
+						lcmp=len(cmp)
+						if (lcmp +1) > len(entry):
+							print "ERROR: length of comparison array longer than entry array"
+							print str(entry) 
+						else:
+							for l in range(len(cmp)):
+								if cmp[l] != entry[l+1]:
+									cmp_res='diff'
+									diff.append(str(cmp[l]) + '<>' + str(entry[l+1]))
 						d['fq'][fid][k]['diff']=cmp_res
 						d['fq'][fid][k]['diffa']=diff
 						del d['fq'][fid][k]['data']
+						if cmp_res=='diff':
+							ct_diff+=1
+							if ct_diff % 100 == 0:
+								print str(ct_diff) + ' found '
+								print diff
 					else:
 						ct_miss_left+=1
 						# add
 						d['fq'][fid][k]={}
-						d['fq'][fid][k]['data']=entry
+						d['fq'][fid][k]['data']=entry[1:]
 						d['fq'][fid][k]['diff']='missing on left'
 						d['fq'][fid][k]['right']=ct_line
 				else:
 					# add
 					d['fq'][fid][k]={}
-					d['fq'][fid][k]['data']=entry
+					d['fq'][fid][k]['data']=entry[1:]
 					d['fq'][fid][k]['diff']='missing on right'
 					d['fq'][fid][k]['left']=ct_line
 				t=0
@@ -118,7 +147,8 @@ def get_stats(d,flist):
 					
 	d['totals']['miss_l']=ct_miss_left
 	d['totals']['miss_r']=ct_miss_right
-	return d
+	#return d
+	return
 
 def write_stats(d,out,quiet):
 	if out != 'stdout':
@@ -129,8 +159,8 @@ def write_stats(d,out,quiet):
 	for fid in d['fq'].keys():
 		if type(d['fq'][fid]) is not dict:
 			continue #break
-		for kval in d['bc'][fid].keys():
-			if type(d['bc'][fid][kval]) is not dict:
+		for kval in d['fq'][fid].keys():
+			if type(d['fq'][fid][kval]) is not dict:
 				continue
 			if 'diff' in d['fq'][fid][kval].keys():
 					if d['fq'][fid][kval]['diff'] != 'same':
@@ -149,6 +179,8 @@ def write_stats(d,out,quiet):
 #	MAIN
 #-----------------------------------------
 if __name__ == '__main__':
+	print header_row()
+	exit()
 	parser=argparse.ArgumentParser(description="Compare unordered fastq files")
 	parser.add_argument('--dir1', required=True, help='First directory containing fusion caller output. Could be substituted for a filename.')
 	parser.add_argument('--dir2', required=True, help='Second directory containing fusion caller output.  Could be substituted for a filename.')
