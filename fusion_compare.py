@@ -29,11 +29,15 @@ def get_files(dir,name):
 def get_fid(fname):
 	fid=''
 	id=['','']
+	Abc=0
+	Pbf=0
 	for p in fname.split('_'):
-		if p[0]=='A':
+		if p[0]=='A' and (Abc==0):
 			id[0]=p
-		elif p[0]=='P':
+			Abc=1
+		elif p[0]=='P' and (Pbc==0):
 			id[1]=p
+			Pbc=1
 	fid='_'.join(id)
 	return fid
 
