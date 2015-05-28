@@ -58,7 +58,7 @@ def get_cmd(group, prog, params):
 -2 {outdir}{out2} \
 -A {adapter1} \
 -B {adapter2} \
--z -k {olen} -X 100 \
+-z {olen} -X 100 \
         """ ).format(
         prog=prog,
         fastq_r1=fastq_r1,
