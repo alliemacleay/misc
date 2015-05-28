@@ -56,8 +56,8 @@ def get_grouped_manifest_files(directory, drmaa_cfg):
 		#'i2'	:'r2',
 		'read1'	:'r1',
 		'r1'	:'r1',
-		'read2'	:'r4',
-		'r2'	:'r4',
+		'read2'	:'r2',
+		'r2'	:'r2',
 		'out1'	:'r1',
 		'out2'	:'r2',
 		}
