@@ -17,6 +17,9 @@ import time
 # return file prefix
 def get_bc_prefix(filename):
 	prefix=filename.split('.')[0]
+	tmp=prefix.split('_')
+	if len(tmp)>1:
+		prefix='_'.join(tmp[:2])
 	return prefix
 
 # - create a dictionary of manifest files grouped by 
