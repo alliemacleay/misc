@@ -121,7 +121,7 @@ def wait_while_job_running(jobname,maxtm):
 # -----------------------------------------
 # Zip it
 #-----------------------------------------
-def gzip_if_not(folder,bsub_off,out,err,group_id):
+def gzip_if_not(folder,bsub_off,out,err,group_id,user,flags):
     zipping = False
     zipped = {}
     for file in next(os.walk(folder))[2]:
@@ -130,20 +130,27 @@ def gzip_if_not(folder,bsub_off,out,err,group_id):
              if parts[0] not in zipped.keys():
                  zipped[parts[0]]=1
                  zipping = True
-                 gzip(os.path.join(folder,parts[0] + '*'),'gz'+group_id+parts[0],bsub_off,out,err)
+                 gzip(os.path.join(folder,parts[0] + '*'),'gz'+group_id+parts[0],bsub_off,out,err,user,flags)
     return zipping
 
-def gzip(filename,jobname,bsub_off,out,err):
+def gzip(filename,jobname,bsub_off,out,err,user,flags):
     cmd = 'gzip ' + filename
     if not bsub_off:
-       cmd = bsub_cmd(out,err) + ' -J ' + jobname + ' ' + cmd
+       flags=flags+' -J '+ jobname
+       cmd = bsub_cmd(out,err,user,flags) + cmd
     os.system(cmd)
     return
 # -----------------------------------------
 # LSF utilities
 #-----------------------------------------
-def bsub_cmd(out,err):
-    txt = 'bsub -q medium -u am282 -o ' + out + ' -e ' + err + ' '
+def bsub_cmd(out,err,user,flags):
+    if flags != '':
+        if flags[0] != ' ':
+            flags = ' ' + flags
+        if flags[-1] != ' ':
+            flags = flags + ' '
+
+    txt = 'bsub -q medium -u ' + user + ' -o ' + out + ' -e ' + err + ' ' + flags
     return txt
 
 def is_job_done(jobname):
@@ -230,6 +237,8 @@ if __name__ == '__main__':
     parser.add_argument('--out', default='tagout', help='directory to deposit output files')
     parser.add_argument('--log', default='batch_log', help='directory to deposit bsub log files')
     parser.add_argument('--bsub_off', action='store_true', help='turn bsub off to test on systems without lsf')
+    parser.add_argument('--bsub_user', default='am282', help='username for bsub command')
+    parser.add_argument('--bsub_flags', default='', help='extra flags for bsub command')
     #parser.add_argument('--undet',  action='store_false', help='include reads less than parameter set my min reads.  Default will skip files named undetermined')
     args = parser.parse_args()
 
@@ -265,7 +274,7 @@ if __name__ == '__main__':
         lsf_group = get_group_id("/demux")
         group_id = lsf_group.split("/demux/")[1]
         lsf_group_cmd=' -g ' + lsf_group
-    needed_zip = gzip_if_not(args.dir,args.bsub_off,lsf_out,lsf_err,group_id)
+    needed_zip = gzip_if_not(args.dir,args.bsub_off,lsf_out,lsf_err,group_id,args.bsub_user,args.bsub_flags)
     for tag in f:
         if (tag.find('undetermined') > -1 ):
             # skip undeterminded for now
@@ -275,7 +284,7 @@ if __name__ == '__main__':
         else:
             if needed_zip:
                 wait_while_job_running('gz'+group_id+tag,60*10) # ten minutes max
-            cmd = bsub_cmd(lsf_out,lsf_err) + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
+            cmd = bsub_cmd(lsf_out,lsf_err,args.bsub_user,args.bsub_flags) + lsf_group_cmd + ' ' + get_cmd(tag, args.script, p)
             # Keep track of lsf job for listener
             count_lsf = count_lsf + 1
 

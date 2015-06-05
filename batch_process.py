@@ -62,7 +62,18 @@ def get_cmd(group, umitag, params):
 		fastq_i2=	fastq_i2,
 	)
 	return cmd
-	
+
+#-----------------------------------------
+# Return bsub command
+#-----------------------------------------
+def bsub_cmd(user,log,flags):
+	if flags != '':
+		if flags[0] != ' ':
+			flags=' '+flags
+		if flags[-1] != ' ':
+			flags=flags+ ' '
+	return 'bsub -q medium -u '+ user +' -o ' + flags + os.path.join(log,'lsf_out.log') + ' -e ' + os.path.join(log,'lsf_err.log') + ' '
+
 #-----------------------------------------
 # Return all unique file prefixes
 #-----------------------------------------
@@ -134,6 +145,8 @@ if __name__ == '__main__':
 	parser.add_argument('--out', default='tagout', help='directory to deposit output files')
 	parser.add_argument('--log', default='batch_log', help='directory to deposit bsub log files')
 	parser.add_argument('--bsub_off',  action='store_true', help='turn bsub off to test on systems without lsf')
+	parser.add_argument('--bsub_user',  default='am282', help='user name for bsub command. default=am282')
+	parser.add_argument('--bsub_mod',  default='', help='extra parameters for bsub command')
 	#parser.add_argument('--undet',  action='store_false', help='include reads less than parameter set my min reads.  Default will skip files named undetermined')
 	args=parser.parse_args()
 
@@ -158,7 +171,7 @@ if __name__ == '__main__':
 		elif(args.bsub_off):
 			cmd=get_cmd(tag, args.umi_tool, p)
 		else:
-			cmd='bsub -q medium -u am282 -o ' + os.path.join(args.log,'lsf_out.log') + ' -e ' + os.path.join(args.log,'lsf_err.log') + ' ' + get_cmd(tag, args.umi_tool, p)
+			cmd=bsub_cmd(args.bsub_user,args.log,args.bsub_mod) + get_cmd(tag, args.umi_tool, p)
 			# Keep track of lsf job for listener
 			count_lsf=count_lsf+2
 		
