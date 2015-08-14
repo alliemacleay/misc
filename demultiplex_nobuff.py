@@ -28,7 +28,6 @@ parser.add_argument('--p5_barcodes')
 parser.add_argument('--p7_barcodes')
 parser.add_argument('--out_dir', default='.')
 parser.add_argument('--out_fname', default='')
-parser.add_argument('--base_mask', default='Y150n,I8,I16,Y150n')
 args = vars(parser.parse_args())
 out_dir = args['out_dir']
 
@@ -171,6 +170,11 @@ for i1,i2 in itertools.izip(fq(args['index1']), fq(args['index2'])):
 
 print ("Read count complete in %.1f minutes." % ( (time.time()-start)/60))
 
+print ("IDs in fastq:")
+for sample_id in count.keys():
+    print(sample_id + '\t' + str(count[sample_id]))
+print('total\t' + str(total_count))
+
 total_count=0
 for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args['index1']), fq(args['index2'])):
     # the original demultiplex stored sequences in a buffer to execute in 1N instead of 2N
@@ -230,3 +234,5 @@ for sample_id in outfiles_i2.keys():
 
 num_fastqs = len([v for k,v in count.iteritems() if v>=args['min_reads']])
 print('Wrote FASTQs for the %d sample barcodes out of %d with at least %d reads in %.1f minutes.' % (num_fastqs, len(count), args['min_reads'], (time.time()-start)/60 ))
+
+assert num_fastqs > 0, "No FASTQs with reads greater than %d resulted from demultiplexing" % args["min_reads"] 
