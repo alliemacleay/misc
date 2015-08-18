@@ -84,7 +84,7 @@ def create_key(f1,f2):
     bc_dictA={}
     bc_dictP={}
     add_file_to_dict(f1,bc_dictA, 7)
-    add_file_to_dict(f2,bc_dictP, 8)
+    add_file_to_dict(f2,bc_dictP, 7)
     bcAP=[bc_dictA,bc_dictP]
     return bcAP
 
@@ -105,7 +105,7 @@ def add_file_to_dict(fname,d, length):
         if len(line)<2:
             continue
         [id,seq]=line
-        d[seq[1:length]]=id
+        d[seq[8-length:8]]=id
     fh.close()
     return
 
