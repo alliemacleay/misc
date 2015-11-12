@@ -69,14 +69,14 @@ def check_done(file_num, path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="Batch command helper",
                                      description="Run umitag utility in batches of similarly prefixed names.  "
-                                                 "Pass in a command in the format ls $INPUT >> $OUTPUT")
+                                                 "Pass in a command in the format ls $INPUT >> $OUT")
     parser.add_argument('--dir', default='.', help='directory containing input files')
     parser.add_argument('--cmd', default='ls $INPUT',
                         help='command to run on each file in the specified directory')
     parser.add_argument('--out', default='tmp', help='directory to deposit output files')
     parser.add_argument('--batch_name', default='batch', help='name to prepend to processed files')
     parser.add_argument('--pattern', default='*.*', help='match pattern for input files.  default=*.*')
-    parser.add_argument('--verbose', default=False, help='verbosity.  default=False')
+    parser.add_argument('--verbose', action='store_true', help='verbosity.  default=False')
 
     # optional bsub options
     parser.add_argument('--bsub', action='store_true', help='use bsub')
