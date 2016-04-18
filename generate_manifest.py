@@ -166,14 +166,12 @@ if __name__ == '__main__':
 	parser.add_argument('--header', required=False, help='Header for manifest file')
 	parser.add_argument('--out', default='manfiles', help='directory to deposit output files')
 	parser.add_argument('--drmaa_config', default='', help='drmaa configuration to execute zipping files if needed')
-	parser.add_argument('--prefix_type', default='barcode', help='specify "NAE" to use as prefix for fastq filenames')
 	args=parser.parse_args()
 
 	p={}
 	batch_manifest=''
 	header=''
 	text=''
-	pfx_type = args.prefix_type
 	if hasattr(args,'dir'):
 		p['path']=args.dir
 	if hasattr(args, 'out'):
@@ -192,7 +190,7 @@ if __name__ == '__main__':
 	#exit()
 
 	not_found={}
-	f = open(batch_manifest, 'rU')
+	f = open(batch_manifest, 'r')
 	man_name=batch_manifest.split('/')[-1].split('.')[0] + '_DEMULTIPLEXED' + '.manifest'
 	manfname=os.path.join(p['out'],man_name)
 	mantmp='.tmp_' + man_name
@@ -209,10 +207,7 @@ if __name__ == '__main__':
 			ia=cid_id.find('umi_demux,')
 			if ia>-1:
 				cid_id=cid_id[ia+9:]
-			if pfx_type == 'NAE':
-				prefix = nae_id.replace(" ", "").replace('\xc2', '').replace('\xa0', '')
-			else:
-				prefix = p5 + '_' + p7
+			prefix=p5 + '_' + p7
 			prefix_key=''
 			for rec_name in fdict.keys():
 				if rec_name.find(prefix)>-1:

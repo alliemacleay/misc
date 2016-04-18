@@ -83,12 +83,12 @@ def create_key(f1,f2):
     bcAP=()
     bc_dictA={}
     bc_dictP={}
-    add_file_to_dict(f1,bc_dictA, 7)
-    add_file_to_dict(f2,bc_dictP, 7)
+    add_file_to_dict(f1,bc_dictA)
+    add_file_to_dict(f2,bc_dictP)
     bcAP=[bc_dictA,bc_dictP]
     return bcAP
 
-def add_file_to_dict(fname,d, length):
+def add_file_to_dict(fname,d):
     """
     helper function - add a file to the dictionary
     :param fname: an array of strings with filenames to parse
@@ -105,7 +105,7 @@ def add_file_to_dict(fname,d, length):
         if len(line)<2:
             continue
         [id,seq]=line
-        d[seq[8-length:8]]=id
+        d[seq[1:8]]=id
     fh.close()
     return
 
@@ -170,11 +170,6 @@ for i1,i2 in itertools.izip(fq(args['index1']), fq(args['index2'])):
 
 print ("Read count complete in %.1f minutes." % ( (time.time()-start)/60))
 
-print ("IDs in fastq:")
-for sample_id in count.keys():
-    print(sample_id + '\t' + str(count[sample_id]))
-print('total\t' + str(total_count))
-
 total_count=0
 for r1,r2,i1,i2 in itertools.izip(fq(args['read1']), fq(args['read2']), fq(args['index1']), fq(args['index2'])):
     # the original demultiplex stored sequences in a buffer to execute in 1N instead of 2N
@@ -234,5 +229,3 @@ for sample_id in outfiles_i2.keys():
 
 num_fastqs = len([v for k,v in count.iteritems() if v>=args['min_reads']])
 print('Wrote FASTQs for the %d sample barcodes out of %d with at least %d reads in %.1f minutes.' % (num_fastqs, len(count), args['min_reads'], (time.time()-start)/60 ))
-
-assert num_fastqs > 0, "No FASTQs with reads greater than %d resulted from demultiplexing" % args["min_reads"] 
