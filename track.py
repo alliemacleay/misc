@@ -30,8 +30,9 @@ def wait_for_finish(job, frequency, timeout):
         cmd = ["bjobs", job]
         response = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()
         duration = time.time() - start
-        job_done = is_job_done(response)
-    return job_done
+        job_done, status = is_job_done(response)
+    print "{} - {}".format(job_num, status)
+    return job_done, status
 
 
 def is_job_done(res):
@@ -40,6 +41,7 @@ def is_job_done(res):
     :param res: platform LSF response array
     :return: True if the job is done, False if it is not
     """
+    status = ''
     job_done = False
     if 'is not found\n' in res[0]:  # response: "Job <452341> is not found\n"
         job_done = True
@@ -47,9 +49,10 @@ def is_job_done(res):
         if len(res) == 2:
             # response: JOBID   USER    STAT  QUEUE      FROM_HOST   EXEC_HOST   JOB_NAME   SUBMIT_TIME
             #           536475  ngscid  DONE  medium     eris1n2     cn012       ls -a      Apr 18 14:55
-            if res[1].split()[2] == 'DONE':
+            status = res[1].split()[2]
+            if status in ['DONE', 'EXIT']:
                 job_done = True
-    return job_done
+    return job_done, status
 
 
 def twilio_alert(twilio_account, twilio_pw, msg):
@@ -71,12 +74,12 @@ if __name__ == "__main__":
         job_num = sys.stdin.read().split('<')[1].split('>')[0]
     else:
         job_num = sys.argv[1]
-    print "Waiting {} to finish.  When done a text will be send to {}".format(job_num, to_number)
-    done = wait_for_finish(job_num, frequency, timeout)
+    print "Waiting for {} to finish.  When done a text will be sent to {}".format(job_num, to_number)
+    done, status = wait_for_finish(job_num, frequency, timeout)
     if not done:
         message = "Job {} has timed out after {} seconds".format(job_num, timeout)
     else:
-        message = "Job {} has finished".format(job_num)
+        message = "Job {} has finished with status of {}".format(job_num, status)
     print message
     twilio_alert(twilio_account, twilio_pw, message)
 
