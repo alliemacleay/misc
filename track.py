@@ -2,9 +2,13 @@ import sys
 import os
 import time
 from twilio.rest import TwilioRestClient
+import smtplib
+from email.mime.text import MIMEText
 import subprocess
 
 """
+This works with a Twilio account or to an ATT phone number
+
 Watch a job running with platform LSF and send a text when the job finishes
 
 To get notifications about an LSF job
@@ -60,15 +64,52 @@ def twilio_alert(twilio_account, twilio_pw, msg):
     client = TwilioRestClient(twilio_account, twilio_pw)
     client.messages.create(to=to_number, from_=from_number, body=msg)
 
+
+def email(to_number, subject, message, cc=None):
+    """
+    http://lifehacker.com/5506326/how-can-i-send-an-email-via-text-message
+    Alltel: phonenumber@message.alltel.com
+    AT&T: phonenumber@txt.att.net
+    T-Mobile: phonenumber@tmomail.net
+    Virgin Mobile: phonenumber@vmobl.com
+    Sprint: phonenumber@messaging.sprintpcs.com
+    Verizon: phonenumber@vtext.com
+    Nextel: phonenumber@messaging.nextel.com
+    US Cellular: phonenumber@mms.uscc.net
+    """
+    server, port = 'phsmgout.partners.org', 25
+    text_type = 'html'
+    to_number = to_number.replace('+', '')
+    if to_number[0] == '1':
+        to_number = to_number[1:]
+    send_to = '{}@txt.att.net'.format(to_number)
+    sendfrom = 'CID@MGH.HARVARD.EDU'
+    msg = MIMEText(message, text_type)
+    msg['From'] = sendfrom
+    msg['To'] = ','.join(send_to)
+    msg['Subject'] = subject
+    smtp = smtplib.SMTP(timeout=timeout)
+    if cc is not None:
+        send_to.extend(cc)
+        msg['Cc'] = ','.join(cc)
+    try:
+        smtp.connect(server, port)
+    except Exception as e:
+        print('Email must be sent from behind the Partners firewall:\nError:{}'.format(e.message))
+        raise e
+    smtp.sendmail(sendfrom, send_to, msg.as_string())
+    smtp.quit()
+
+
 if __name__ == "__main__":
     frequency = 60  # number of seconds to sleep before checking for the job again
     timeout = 60 * 60 * 10  # ten hours
-    twilio_account = os.getenv("TWILIO_ACT")
-    twilio_pw = os.getenv("TWILIO_PW")
-    from_number = os.getenv("TWILIO_NUM")
-    to_number = os.getenv("MY_PHONE")
+    twilio_account = os.getenv("TWILIO_ACT", "")
+    twilio_pw = os.getenv("TWILIO_PW", "")
+    from_number = os.getenv("TWILIO_NUM", "")
+    to_number = os.getenv("MY_PHONE", "")
     if '' in [twilio_account, twilio_pw, from_number, to_number]:
-        raise ValueError("Make sure TWILIO_ACT, TWILIO_PW, TWILIO_NUM, and MY_PHONE are set in the environment")
+        raise ValueError("Make sure MY_PHONE is set in the environment")
 
     if not sys.stdin.isatty():
         job_num = sys.stdin.read().split('<')[1].split('>')[0]
@@ -81,5 +122,8 @@ if __name__ == "__main__":
     else:
         message = "Job {} has finished with status of {}".format(job_num, status)
     print message
-    twilio_alert(twilio_account, twilio_pw, message)
+    if '' not in [twilio_account, twilio_pw, from_number]:
+        twilio_alert(twilio_account, twilio_pw, message)
+    else:
+        email(to_number, 'Job status', message)
 
