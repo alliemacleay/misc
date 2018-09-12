@@ -108,7 +108,7 @@ if __name__ == "__main__":
     twilio_pw = os.getenv("TWILIO_PW", "")
     from_number = os.getenv("TWILIO_NUM", "")
     to_number = os.getenv("MY_PHONE", "")
-    if '' in [twilio_account, twilio_pw, from_number, to_number]:
+    if to_number =='':
         raise ValueError("Make sure MY_PHONE is set in the environment")
 
     if not sys.stdin.isatty():

@@ -207,34 +207,39 @@ def make_reference(table, out):
     """
     chrom_dict = get_chroms(table)
     breakpoint_dict = {}
+    fusion_id_dict = {}
     count = 0
     with open(out, 'w') as ref:
-        for entry_i in table.entries:
+        for fusion_id in table.index:
             count += 1
             if count % 500 == 0:
                 print 'Processed {}'.format(count)
-            entry = entry_i.dict
-            if entry['FusionOrder'] != 0:  # Take first entry only to find correct breakpoint
-                continue
+            fus_id_entries = [table.entries[x].dict for x in table.index[fusion_id]]
+            entry = fus_id_entries[0]
+            sz = len(fus_id_entries)
             chrom = entry['Chromosome']
             if chrom is None and entry['GeneName'] is not None:
                 chrom = chrom_dict.get(entry['GeneName'], 'chrUnknown')
             chrom = chrom.replace('chr', '')
             fusion_id = entry['FusionID']
-            transcript_start = entry['TranscriptPosStart']
-            transcript_end = entry['TranscriptPosEnd']
-            pos = entry['GenomePosStart']
-            breakpoint_pos = abs(int(transcript_end) - int(transcript_start)) if \
-                transcript_end is not None and transcript_start is not None else ""
             fusion_abbr = '{}_{}'.format(entry['docid'], entry['GenesFused'])
+            fusion_id_dict[fusion_id] = fusion_abbr
             sequence = split_sequence_lines(entry['Sequence'])
+            breakpoints = []
+            for i in range(sz - 1):
+                entry = fus_id_entries[i]
+                transcript_start = entry['TranscriptPosStart']
+                transcript_end = entry['TranscriptPosEnd']
+                pos = entry['GenomePosStart']
+                breakpoints.append(str(abs(int(transcript_end) - int(transcript_start))) \
+                    if transcript_end is not None and transcript_start is not None else "")
+
             if len(sequence) > 0:
                 #  > chromosome dna:fusion id:reference name:chr:pos:num
                 #  >1_CCDC6:RET dna:"CCDC6{ENST00000263102}:r.1_535_RET{ENST00000355710}:r.2369_5659":QuiverFusions:10:10:61665880/535:1
                 ref.write('>{4} dna:"{1}":QuiverFusions:{0}:{0}:{2}/{5}:1\n{3}'
-                          ''.format(chrom, fusion_id, pos, sequence, fusion_abbr, breakpoint_pos))
-                breakpoint_dict[fusion_abbr] = breakpoint_pos
-    return breakpoint_dict
+                          ''.format(chrom, fusion_id, pos, sequence, fusion_abbr, ','.join(breakpoints)))
+    return fusion_id_dict
 
 
 def write_breakpoints(bp, bp_file):
@@ -281,7 +286,8 @@ def make_detango_dict(table, transcript_dict):
         fus_id_entries = [table.entries[x].dict for x in table.index[fusion_id]]
         if fus_id_entries[0]['Sequence'] == '':
             continue
-        fusion_abbr = '{}_{}'.format(fus_id_entries[0]['docid'], fus_id_entries[0]['GenesFused'])
+        #fusion_abbr = '{}_{}'.format(fus_id_entries[0]['docid'], fus_id_entries[0]['GenesFused'])
+        fusion_abbr = fus_id_entries[0]['FusionID']
         detango_dict[fusion_id] = '{}\t{}'.format(fusion_abbr, detango_annotation(fus_id_entries, transcript_dict, chrom))
         if detango_dict[fusion_id] == '':
             del detango_dict[fusion_id]
@@ -320,18 +326,18 @@ def read_transcript_file(infile):
     return tdict
 
 
-def main(db_file, out_file, bp_file=None, dt_file=None, trs_out=None, trs_in=None):
+def main(db_file, out_file, fusion_file=None, dt_file=None, trs_out=None, trs_in=None):
     """ Main entry point """
     sql_table = get_sql_table(db_file)
-    breakpoints = make_reference(sql_table, out_file)
+    fusions = make_reference(sql_table, out_file)
     trs_dict = None
     print 'Reference written to {}'.format(out_file)
-    if bp_file is not None:
-        print 'Writing breakpoint file...'
-        write_breakpoints(breakpoints, bp_file)
-        print 'Breakpoints for {} written to {}'.format(out_file, bp_file)
+    if fusion_file is not None:
+        print 'Writing fusion abbreviation file...'
+        write_breakpoints(fusions, fusion_file)
+        print 'Fusion Abbreviations for {} written to {}'.format(out_file, fusion_file)
     else:
-        print 'Breakpoint file NOT written'
+        print 'Fusion abbreviation file NOT written'
     if trs_out is not None:
         print 'Compiling new transcript file.  This will take a while...'
         trs_dict = compile_new_transcript_file(sql_table, trs_out)
@@ -358,7 +364,7 @@ if __name__ == "__main__":
                                                  "\nhttp://archerdx.com/software/quiver")
     parser.add_argument("--db-file", required=True, help="Path to a .db file")
     parser.add_argument("--out-file", required=True, help="Path to output reference file")
-    parser.add_argument("--bp-out-file", default=None, help="Path to breakpoints file")
+    parser.add_argument("--fusion-out-file", default=None, help="Path to breakpoints file")
     parser.add_argument("--dt-out-file", default=None, help="Path to detango annotation file")
     parser.add_argument("--transcript-out-file", default=None, help="Path to transcript annotation file")
     parser.add_argument("--transcript-in-file", default=None, help="Path to transcript annotation file to use")
@@ -366,4 +372,4 @@ if __name__ == "__main__":
     if not os.path.exists(args.db_file):
         err_txt = 'Database file {} does not exist'.format(args.db_file)
         raise ValueError(err_txt)
-    main(args.db_file, args.out_file, args.bp_out_file, args.dt_out_file, args.transcript_out_file,  args.transcript_in_file)
+    main(args.db_file, args.out_file, args.fusion_out_file, args.dt_out_file, args.transcript_out_file,  args.transcript_in_file)
