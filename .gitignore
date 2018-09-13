@@ -1,0 +1,5 @@
+.idea*
+manfiles
+tst.*
+orig_results
+seq_pad_out
